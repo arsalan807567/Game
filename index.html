@@ -35,20 +35,12 @@
         }
         .hurdle {
             position: absolute;
-            width: 120px;
+            width: 140px;
             height: 100%;
-            background-image: url('imran_khan_tall.png');
             background-size: contain;
             background-repeat: no-repeat;
-            background-position: center bottom;
+            background-position: center;
             z-index: 5;
-        }
-        .hurdle-gap {
-            position: absolute;
-            width: 120px;
-            height: 200px;
-            background: transparent;
-            z-index: 4;
         }
         #intro-screen {
             position: absolute;
@@ -99,21 +91,41 @@
             z-index: 95;
             color: white;
         }
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+        .loading-images {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        .loading-img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid white;
+            background-size: cover;
+            background-position: center;
+        }
+        .loading-vs {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ff4500;
+        }
         .loading-text {
             font-size: 24px;
             margin-bottom: 20px;
         }
-        .loading-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .countdown {
+            font-size: 72px;
+            font-weight: bold;
+            color: #ffff00;
+            text-shadow: 2px 2px 8px #000;
+            min-width: 100px;
+            text-align: center;
         }
         #score-board {
             position: absolute;
@@ -179,8 +191,15 @@
     </div>
 
     <div id="loading-screen">
-        <div class="loading-text">Get Ready...</div>
-        <div class="loading-spinner"></div>
+        <div class="loading-content">
+            <div class="loading-images">
+                <div class="loading-img" style="background-image: url('shahbaz_flying.png');"></div>
+                <div class="loading-vs">VS</div>
+                <div class="loading-img" style="background-image: url('imran_khan_tall.png');"></div>
+            </div>
+            <div class="loading-text">Keep pressing the jump button to avoid falling!</div>
+            <div class="countdown" id="countdown">3</div>
+        </div>
     </div>
 
     <div id="game-over-screen">
@@ -197,6 +216,7 @@
     const scoreBoard = document.getElementById('score-board');
     const introScreen = document.getElementById('intro-screen');
     const loadingScreen = document.getElementById('loading-screen');
+    const countdownEl = document.getElementById('countdown');
     const gameOverScreen = document.getElementById('game-over-screen');
     const gameOverPic = document.getElementById('game-over-pic');
     const finalScoreTxt = document.getElementById('final-score');
@@ -222,7 +242,8 @@
     let playerVelocity = 0;
     let gravity = 0.4;
     let flapPower = -8;
-    let isFlying = false;
+    let gameSpeed = 5;
+    let speedIncrement = 0.0005;
 
     function startGame() {
         introScreen.style.display = 'none';
@@ -235,24 +256,37 @@
             sounds.mathy.play();
         }, 1500);
 
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-            gameActive = true;
-            score = 0;
-            playerY = window.innerHeight / 2;
-            playerVelocity = 0;
-            updateScore();
-            sounds.bgm.play();
-            spawnHurdle();
-            gameLoop();
-        }, 4000);
+        // Countdown sequence
+        let count = 3;
+        countdownEl.textContent = count;
+        
+        const countdownInterval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countdownEl.textContent = count;
+            } else {
+                clearInterval(countdownInterval);
+                countdownEl.textContent = 'GO!';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    gameActive = true;
+                    score = 0;
+                    playerY = window.innerHeight / 2;
+                    playerVelocity = 0;
+                    gameSpeed = 5;
+                    updateScore();
+                    sounds.bgm.play();
+                    spawnHurdle();
+                    gameLoop();
+                }, 500);
+            }
+        }, 1000);
     }
 
     function flap() {
         if (gameActive) {
             playerVelocity = flapPower;
             sounds.jump.play();
-            isFlying = true;
         }
     }
 
@@ -269,12 +303,23 @@
         hurdle.style.left = window.innerWidth + 'px';
         hurdle.style.top = '0';
 
+        // Randomly choose between top and bottom hurdle
+        const isTopHurdle = Math.random() > 0.5;
+        
+        if (isTopHurdle) {
+            hurdle.style.backgroundImage = "url('imran_khan_tall_sky.png')";
+            hurdle.style.backgroundPosition = 'center top';
+        } else {
+            hurdle.style.backgroundImage = "url('imran_khan_tall.png')";
+            hurdle.style.backgroundPosition = 'center bottom';
+        }
+
         gameContainer.appendChild(hurdle);
         
-        // Random gap position
-        const gapSize = 200;
-        const minGapY = 100;
-        const maxGapY = window.innerHeight - gapSize - 100;
+        // Gap configuration
+        const gapSize = 220;
+        const minGapY = 80;
+        const maxGapY = window.innerHeight - gapSize - 80;
         const gapY = minGapY + Math.random() * (maxGapY - minGapY);
 
         hurdles.push({
@@ -282,10 +327,12 @@
             x: window.innerWidth,
             gapY: gapY,
             gapSize: gapSize,
-            passed: false
+            passed: false,
+            isTopHurdle: isTopHurdle
         });
 
-        const nextSpawn = 2500 + Math.random() * 1500;
+        // Spawn hurdles more frequently
+        const nextSpawn = 2000 + Math.random() * 1200;
         setTimeout(spawnHurdle, nextSpawn);
     }
 
@@ -308,10 +355,13 @@
 
         player.style.top = playerY + 'px';
 
+        // Increase speed over time
+        gameSpeed += speedIncrement;
+
         // Move hurdles
         for (let i = hurdles.length - 1; i >= 0; i--) {
             const h = hurdles[i];
-            h.x -= 5 + (score / 100);
+            h.x -= gameSpeed;
             h.el.style.left = h.x + 'px';
 
             // Check if passed
@@ -322,18 +372,18 @@
                 sounds.pass.play();
             }
 
-            // Collision detection
-            const playerLeft = 80;
-            const playerRight = 80 + 100;
-            const playerTop = playerY;
-            const playerBottom = playerY + 100;
+            // Precise collision detection with padding
+            const playerLeft = 80 + 15;
+            const playerRight = 80 + 100 - 15;
+            const playerTop = playerY + 15;
+            const playerBottom = playerY + 100 - 15;
 
-            const hurdleLeft = h.x;
-            const hurdleRight = h.x + 120;
+            const hurdleLeft = h.x + 10;
+            const hurdleRight = h.x + 140 - 10;
             const gapTop = h.gapY;
             const gapBottom = h.gapY + h.gapSize;
 
-            // Check if player is in the hurdle area
+            // Check if player is in the hurdle's horizontal range
             if (playerRight > hurdleLeft && playerLeft < hurdleRight) {
                 // Check if player is NOT in the gap
                 if (playerTop < gapTop || playerBottom > gapBottom) {
@@ -343,8 +393,10 @@
             }
 
             // Remove off-screen hurdles
-            if (h.x < -150) {
-                gameContainer.removeChild(h.el);
+            if (h.x < -200) {
+                if (gameContainer.contains(h.el)) {
+                    gameContainer.removeChild(h.el);
+                }
                 hurdles.splice(i, 1);
             }
         }
@@ -385,6 +437,7 @@
         hurdles = [];
         playerY = window.innerHeight / 2;
         playerVelocity = 0;
+        gameSpeed = 5;
         sounds.bgm.pause();
         sounds.bgm.currentTime = 0;
         gameOverScreen.style.display = 'none';
