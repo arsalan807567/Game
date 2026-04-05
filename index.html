@@ -302,7 +302,7 @@
                 <div class="circle-img" style="background-image: url('imran_realistic.png');"></div>
             </div>
             <p style="font-size: clamp(14px, 3vw, 18px); margin-bottom: 20px;">Press Space or Tap to Fly!</p>
-            <button onclick="startGame()">Start Game</button>
+            <button ontouchstart="startGame()" onclick="startGame()">Start Game</button>
         </div>
 
         <div id="loading-screen">
@@ -321,7 +321,7 @@
             <h1 id="game-over-title">GAME OVER</h1>
             <img id="game-over-pic" class="game-over-img" src="" alt="Game Over">
             <p id="final-score">Stolen Dollars: $0</p>
-            <button id="restart-btn" onclick="restartGame()" style="margin-top: 30px; display: none;">Try Again</button>
+            <button id="restart-btn" ontouchstart="restartGame()" onclick="restartGame()" style="margin-top: 30px; display: none;">Try Again</button>
         </div>
     </div>
 </div>
@@ -452,19 +452,31 @@
         };
     }
 
+    let isStarting = false;
     function startGame() {
-        // SILENT KILL-SWITCH: If game is killed, just return without doing anything
-        if (gameKilled) {
-            return;
-        }
+        if (isStarting || gameKilled) return;
+        isStarting = true;
+
+        // UNLOCK AUDIO for mobile browsers
+        // On mobile, audio can only be played after a direct user interaction.
+        // We play and immediately pause all sounds to "unlock" them.
+        Object.values(sounds).forEach(sound => {
+            sound.play().then(() => {
+                sound.pause();
+                sound.currentTime = 0;
+            }).catch(e => console.log("Audio unlock failed for one track, continuing..."));
+        });
         
         introScreen.style.display = 'none';
         loadingScreen.style.display = 'flex';
         
-        sounds.dang.play();
+        // Start playing initial sounds
+        setTimeout(() => {
+            sounds.dang.play().catch(e => console.log("Sound play failed:", e));
+        }, 100);
         
         setTimeout(() => {
-            sounds.mathy.play();
+            sounds.mathy.play().catch(e => console.log("Sound play failed:", e));
         }, 1500);
 
         let count = 3;
@@ -485,7 +497,7 @@
                     playerVelocity = 0;
                     gameSpeed = 6;
                     updateScore();
-                    sounds.bgm.play();
+                    sounds.bgm.play().catch(e => console.log("BGM play failed:", e));
                     spawnHurdle();
                     gameLoop();
                 }, 500);
@@ -655,10 +667,8 @@
     }
 
     function restartGame() {
-        // SILENT KILL-SWITCH: If game is killed, just return without doing anything
-        if (gameKilled) {
-            return;
-        }
+        if (gameKilled) return;
+        isStarting = false;
         
         sounds.khatakar.pause();
         sounds.khatakar.currentTime = 0;
@@ -692,12 +702,21 @@
         }
     });
     
-    window.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        flap();
-    }, { passive: false });
-    
-    window.addEventListener('mousedown', flap);
+    // Unified control for both mobile and desktop
+    function handleInput(e) {
+        // Prevent default only if the game is active to avoid blocking button clicks
+        if (gameActive) {
+            if (e.cancelable) e.preventDefault();
+            flap();
+        }
+    }
+
+    window.addEventListener('touchstart', handleInput, { passive: false });
+    window.addEventListener('mousedown', (e) => {
+        // If the click is on a button, don't flap (let the button's onclick handle it)
+        if (e.target.tagName === 'BUTTON') return;
+        handleInput(e);
+    });
     
     window.addEventListener('resize', () => {
         if (playerY > window.innerHeight - 100) {
