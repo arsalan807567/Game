@@ -72,12 +72,15 @@
         
         .hurdle {
             position: absolute;
-            width: 120px;
+            width: 150px;
             height: 100%;
-            background-size: contain;
+            background-size: auto 100%;
             background-repeat: no-repeat;
-            background-position: center;
+            background-position: center center;
             z-index: 25;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         #intro-screen {
@@ -422,7 +425,7 @@
         const bodyBottom = imgTop + renderedH * HURDLE_BODY_BOTTOM_FRAC;
 
         const hurdleLeft = h.x;
-        const hurdleRight = h.x + 120;
+        const hurdleRight = h.x + 150;
         const hPad = 10;
 
         return {
@@ -541,7 +544,7 @@
             h.x -= gameSpeed;
             h.el.style.left = h.x + 'px';
 
-            if (!h.passed && h.x + 120 < 40) {
+            if (!h.passed && h.x + 150 < 40) {
                 h.passed = true;
                 score += 10;
                 updateScore();
