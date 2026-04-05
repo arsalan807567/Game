@@ -1,0 +1,5 @@
+{
+  "enabled": true,
+  "version": "2.0",
+  "description": "Game status file. Set enabled to false to disable the game globally. This file is checked by the game client every 30 seconds. Even if the user is offline, the last known status is cached locally and enforced."
+}

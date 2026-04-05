@@ -21,27 +21,65 @@
             width: 100vw;
             height: 100vh;
             background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%);
+            overflow: hidden;
         }
+        
+        /* Parallax background layers */
+        #bg-layer-1 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('lahore_bg.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.8;
+            z-index: 1;
+        }
+        
+        #bg-layer-2 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(255,150,0,0.1) 0%, rgba(255,100,0,0.2) 100%);
+            z-index: 2;
+        }
+        
+        #game-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+        
         #player {
             position: absolute;
-            width: 100px;
+            width: 80px;
             height: 100px;
-            left: 80px;
-            background-image: url('shahbaz_flying.png');
+            left: 40px;
+            background-image: url('shahbaz_realistic.png');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            z-index: 10;
+            z-index: 50;
         }
+        
         .hurdle {
             position: absolute;
-            width: 140px;
+            width: 120px;
             height: 100%;
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            z-index: 5;
+            z-index: 25;
         }
+        
         #intro-screen {
             position: absolute;
             top: 0;
@@ -56,27 +94,39 @@
             z-index: 100;
             color: white;
             text-align: center;
+            padding: 20px;
         }
+        
+        #intro-screen h1 {
+            font-size: clamp(24px, 8vw, 48px);
+            margin-bottom: 30px;
+        }
+        
         .vs-container {
             display: flex;
             align-items: center;
             gap: 20px;
             margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
+        
         .circle-img {
-            width: 120px;
-            height: 120px;
+            width: clamp(80px, 20vw, 120px);
+            height: clamp(80px, 20vw, 120px);
             border-radius: 50%;
             border: 4px solid white;
             background-size: cover;
             background-position: center;
         }
+        
         .vs-text {
-            font-size: 48px;
+            font-size: clamp(32px, 8vw, 48px);
             font-weight: bold;
             color: #ff4500;
             text-shadow: 2px 2px 4px #000;
         }
+        
         #loading-screen {
             position: absolute;
             top: 0;
@@ -90,53 +140,67 @@
             align-items: center;
             z-index: 95;
             color: white;
+            padding: 20px;
         }
+        
         .loading-content {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 30px;
         }
+        
         .loading-images {
             display: flex;
-            gap: 30px;
+            gap: 20px;
             align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
         }
+        
         .loading-img {
-            width: 100px;
-            height: 100px;
+            width: clamp(60px, 15vw, 100px);
+            height: clamp(60px, 15vw, 100px);
             border-radius: 50%;
             border: 3px solid white;
             background-size: cover;
             background-position: center;
         }
+        
         .loading-vs {
-            font-size: 36px;
+            font-size: clamp(24px, 6vw, 36px);
             font-weight: bold;
             color: #ff4500;
         }
+        
         .loading-text {
-            font-size: 24px;
+            font-size: clamp(16px, 4vw, 24px);
             margin-bottom: 20px;
         }
+        
         .countdown {
-            font-size: 72px;
+            font-size: clamp(48px, 12vw, 72px);
             font-weight: bold;
             color: #ffff00;
             text-shadow: 2px 2px 8px #000;
             min-width: 100px;
             text-align: center;
         }
+        
         #score-board {
             position: absolute;
             top: 20px;
             left: 20px;
-            font-size: 24px;
+            font-size: clamp(16px, 4vw, 24px);
             font-weight: bold;
             color: #fff;
             text-shadow: 2px 2px 4px #000;
             z-index: 50;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 5px;
         }
+        
         #game-over-screen {
             position: absolute;
             top: 0;
@@ -150,67 +214,197 @@
             align-items: center;
             z-index: 110;
             color: white;
+            padding: 20px;
         }
+        
+        #game-over-screen h1 {
+            font-size: clamp(28px, 8vw, 48px);
+            margin-bottom: 20px;
+        }
+        
         .game-over-img {
-            width: 250px;
+            width: clamp(150px, 40vw, 250px);
             height: auto;
             margin-bottom: 20px;
             border: 5px solid #fff;
             border-radius: 10px;
         }
+        
+        #final-score {
+            margin-top: 20px;
+            font-size: clamp(18px, 5vw, 28px);
+        }
+        
         button {
-            padding: 15px 30px;
-            font-size: 20px;
+            padding: clamp(10px, 3vw, 15px) clamp(20px, 5vw, 30px);
+            font-size: clamp(16px, 4vw, 20px);
             background: #4CAF50;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             margin-top: 20px;
+            transition: background 0.3s;
         }
+        
         button:hover {
             background: #45a049;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        #offline-warning {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 120;
+            display: none;
+            max-width: 90%;
+        }
+        
+        #offline-warning h2 {
+            font-size: clamp(20px, 6vw, 32px);
+            margin-bottom: 20px;
+            color: #ff4500;
+        }
+        
+        #offline-warning p {
+            font-size: clamp(14px, 3vw, 18px);
+            margin-bottom: 20px;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            #player {
+                width: 60px;
+                height: 80px;
+                left: 30px;
+            }
+            
+            .hurdle {
+                width: 100px;
+            }
         }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="score-board">Stolen Dollars: $0</div>
-    <div id="player"></div>
+    <div id="bg-layer-1"></div>
+    <div id="bg-layer-2"></div>
+    
+    <div id="game-content">
+        <div id="score-board">Stolen Dollars: $0</div>
+        <div id="player"></div>
 
-    <div id="intro-screen">
-        <h1>Running Shahbaz</h1>
-        <div class="vs-container">
-            <div class="circle-img" style="background-image: url('shahbaz_flying.png');"></div>
-            <div class="vs-text">VS</div>
-            <div class="circle-img" style="background-image: url('imran_khan_tall.png');"></div>
-        </div>
-        <p>Press Space or Tap to Fly!</p>
-        <button onclick="startGame()">Start Game</button>
-    </div>
-
-    <div id="loading-screen">
-        <div class="loading-content">
-            <div class="loading-images">
-                <div class="loading-img" style="background-image: url('shahbaz_flying.png');"></div>
-                <div class="loading-vs">VS</div>
-                <div class="loading-img" style="background-image: url('imran_khan_tall.png');"></div>
+        <div id="intro-screen">
+            <h1>Running Shahbaz</h1>
+            <div class="vs-container">
+                <div class="circle-img" style="background-image: url('shahbaz_realistic.png');"></div>
+                <div class="vs-text">VS</div>
+                <div class="circle-img" style="background-image: url('imran_realistic.png');"></div>
             </div>
-            <div class="loading-text">Keep pressing the jump button to avoid falling!</div>
-            <div class="countdown" id="countdown">3</div>
+            <p style="font-size: clamp(14px, 3vw, 18px); margin-bottom: 20px;">Press Space or Tap to Fly!</p>
+            <button onclick="startGame()">Start Game</button>
+        </div>
+
+        <div id="loading-screen">
+            <div class="loading-content">
+                <div class="loading-images">
+                    <div class="loading-img" style="background-image: url('shahbaz_realistic.png');"></div>
+                    <div class="loading-vs">VS</div>
+                    <div class="loading-img" style="background-image: url('imran_realistic.png');"></div>
+                </div>
+                <div class="loading-text">Keep pressing the jump button to avoid falling!</div>
+                <div class="countdown" id="countdown">3</div>
+            </div>
+        </div>
+
+        <div id="game-over-screen">
+            <h1 id="game-over-title">GAME OVER</h1>
+            <img id="game-over-pic" class="game-over-img" src="" alt="Game Over">
+            <p id="final-score">Stolen Dollars: $0</p>
+            <button id="restart-btn" onclick="restartGame()" style="margin-top: 30px; display: none;">Try Again</button>
         </div>
     </div>
-
-    <div id="game-over-screen">
-        <h1 id="game-over-title">GAME OVER</h1>
-        <img id="game-over-pic" class="game-over-img" src="" alt="Game Over">
-        <p id="final-score" style="margin-top: 20px; font-size: 28px;">Stolen Dollars: $0</p>
-        <button id="restart-btn" onclick="restartGame()" style="margin-top: 30px; display: none;">Try Again</button>
+    
+    <div id="offline-warning">
+        <h2>⚠️ Game Disabled</h2>
+        <p>This game has been disabled by the administrator.</p>
+        <p>Please connect to the internet and refresh the page.</p>
     </div>
 </div>
 
 <script>
+    // ============================================================
+    // REMOTE KILL-SWITCH CONFIGURATION
+    // ============================================================
+    const KILL_SWITCH_URL = 'https://api.github.com/repos/arsalan807567/Game/contents/game_status.json';
+    const LOCAL_STORAGE_KEY = 'game_kill_switch_status';
+    const STATUS_CHECK_INTERVAL = 30000; // Check every 30 seconds
+    
+    let gameKilled = false;
+    
+    async function checkGameStatus() {
+        try {
+            const response = await fetch(KILL_SWITCH_URL, { 
+                method: 'GET',
+                headers: { 'Accept': 'application/vnd.github.v3.raw' }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.enabled === false) {
+                    gameKilled = true;
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ killed: true, timestamp: Date.now() }));
+                    showGameDisabledScreen();
+                    return true;
+                } else {
+                    gameKilled = false;
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ killed: false, timestamp: Date.now() }));
+                    return false;
+                }
+            }
+        } catch (error) {
+            // Offline or network error - check local cache
+            const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (cached) {
+                const status = JSON.parse(cached);
+                if (status.killed) {
+                    gameKilled = true;
+                    showGameDisabledScreen();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    function showGameDisabledScreen() {
+        document.getElementById('offline-warning').style.display = 'flex';
+        document.getElementById('intro-screen').style.display = 'none';
+        document.getElementById('game-content').style.pointerEvents = 'none';
+        gameActive = false;
+    }
+    
+    // Check status on page load
+    window.addEventListener('load', () => {
+        checkGameStatus();
+        // Periodically check status
+        setInterval(checkGameStatus, STATUS_CHECK_INTERVAL);
+    });
+    
+    // ============================================================
+    // GAME LOGIC
+    // ============================================================
     const player = document.getElementById('player');
     const gameContainer = document.getElementById('game-container');
     const scoreBoard = document.getElementById('score-board');
@@ -221,6 +415,7 @@
     const gameOverPic = document.getElementById('game-over-pic');
     const finalScoreTxt = document.getElementById('final-score');
     const restartBtn = document.getElementById('restart-btn');
+    const gameContent = document.getElementById('game-content');
 
     // Audio assets
     const sounds = {
@@ -241,54 +436,37 @@
     let animationId;
     let playerY = window.innerHeight / 2;
     let playerVelocity = 0;
-    let gravity = 0.4;
-    let flapPower = -8;
-    let gameSpeed = 5;
-    let speedIncrement = 0.0005;
+    let gravity = 0.5;
+    let flapPower = -9;
+    let gameSpeed = 6;
+    let speedIncrement = 0.0008;
+    let hurdleSpawnInterval = 1400; // Faster spawn rate for increased difficulty
 
-    // Hurdle image aspect ratio: 768 x 1344
-    // In a 140px wide div with background-size: contain
-    // Rendered height = 140 * (1344 / 768) = 245px
-    const HURDLE_RENDERED_HEIGHT = 140 * (1344 / 768); // ~245px
-
-    // Content bounds within the image (as fractions of image height):
-    // imran_khan_tall.png: content from row 140/1344 to 1258/1344
-    // imran_khan_tall_sky.png: content from row 40/1344 to 1312/1344
-    // We use slightly generous bounds for fair collision detection
-    const HURDLE_BODY_TOP_FRAC = 0.08;    // 8% from top of rendered image
-    const HURDLE_BODY_BOTTOM_FRAC = 0.96; // 96% from top of rendered image
+    // Hurdle collision bounds (adjusted for new sprite size)
+    const HURDLE_RENDERED_HEIGHT = 120 * (1344 / 768); // ~210px
+    const HURDLE_BODY_TOP_FRAC = 0.08;
+    const HURDLE_BODY_BOTTOM_FRAC = 0.96;
 
     function getHurdleCollisionBounds(h) {
-        // Returns the actual pixel bounds of the hurdle character on screen
         const screenHeight = window.innerHeight;
         const renderedH = HURDLE_RENDERED_HEIGHT;
 
         let imgTop, imgBottom;
 
         if (h.isTopHurdle) {
-            // background-position: center top
-            // Image top aligns with div top (y=0)
             imgTop = 0;
             imgBottom = renderedH;
         } else {
-            // background-position: center bottom
-            // Image bottom aligns with div bottom (y=screenHeight)
             imgTop = screenHeight - renderedH;
             imgBottom = screenHeight;
         }
 
-        // Apply body fraction offsets (trim transparent padding)
         const bodyTop = imgTop + renderedH * HURDLE_BODY_TOP_FRAC;
         const bodyBottom = imgTop + renderedH * HURDLE_BODY_BOTTOM_FRAC;
 
-        // Horizontal bounds: image is centered in 140px wide div
-        // background-size: contain with 140px width -> image renders at 140px wide
-        // Image is centered horizontally in the div
         const hurdleLeft = h.x;
-        const hurdleRight = h.x + 140;
-
-        // Add a small horizontal padding to make collision fair
-        const hPad = 12;
+        const hurdleRight = h.x + 120;
+        const hPad = 10;
 
         return {
             left: hurdleLeft + hPad,
@@ -299,17 +477,20 @@
     }
 
     function startGame() {
+        if (gameKilled) {
+            showGameDisabledScreen();
+            return;
+        }
+        
         introScreen.style.display = 'none';
         loadingScreen.style.display = 'flex';
         
-        // Intro sequence with loading
         sounds.dang.play();
         
         setTimeout(() => {
             sounds.mathy.play();
         }, 1500);
 
-        // Countdown sequence
         let count = 3;
         countdownEl.textContent = count;
         
@@ -326,7 +507,7 @@
                     score = 0;
                     playerY = window.innerHeight / 2;
                     playerVelocity = 0;
-                    gameSpeed = 5;
+                    gameSpeed = 6;
                     updateScore();
                     sounds.bgm.play();
                     spawnHurdle();
@@ -337,7 +518,7 @@
     }
 
     function flap() {
-        if (gameActive) {
+        if (gameActive && !gameKilled) {
             playerVelocity = flapPower;
             sounds.jump.play();
         }
@@ -356,18 +537,17 @@
         hurdle.style.left = window.innerWidth + 'px';
         hurdle.style.top = '0';
 
-        // Randomly choose between top and bottom hurdle
         const isTopHurdle = Math.random() > 0.5;
         
         if (isTopHurdle) {
-            hurdle.style.backgroundImage = "url('imran_khan_tall_sky.png')";
+            hurdle.style.backgroundImage = "url('imran_realistic.png')";
             hurdle.style.backgroundPosition = 'center top';
         } else {
-            hurdle.style.backgroundImage = "url('imran_khan_tall.png')";
+            hurdle.style.backgroundImage = "url('imran_realistic.png')";
             hurdle.style.backgroundPosition = 'center bottom';
         }
 
-        gameContainer.appendChild(hurdle);
+        gameContent.appendChild(hurdle);
 
         hurdles.push({
             el: hurdle,
@@ -376,8 +556,8 @@
             isTopHurdle: isTopHurdle
         });
 
-        // Spawn next hurdle
-        const nextSpawn = 1800 + Math.random() * 800;
+        // Spawn next hurdle with increased frequency
+        const nextSpawn = hurdleSpawnInterval + Math.random() * 600;
         setTimeout(spawnHurdle, nextSpawn);
     }
 
@@ -409,30 +589,24 @@
             h.x -= gameSpeed;
             h.el.style.left = h.x + 'px';
 
-            // Check if passed (player has cleared the hurdle)
-            if (!h.passed && h.x + 140 < 80) {
+            // Check if passed
+            if (!h.passed && h.x + 120 < 40) {
                 h.passed = true;
                 score += 10;
                 updateScore();
                 sounds.pass.play();
             }
 
-            // -------------------------------------------------------
-            // FIXED COLLISION DETECTION
-            // Use actual visual bounds of the hurdle character image
-            // -------------------------------------------------------
+            // Collision detection
             const bounds = getHurdleCollisionBounds(h);
 
-            // Player bounding box (with small padding for fairness)
-            const pPad = 12;
-            const playerLeft = 80 + pPad;
-            const playerRight = 80 + 100 - pPad;
+            const pPad = 10;
+            const playerLeft = 40 + pPad;
+            const playerRight = 40 + 80 - pPad;
             const playerTop = playerY + pPad;
             const playerBottom = playerY + 100 - pPad;
 
-            // Check horizontal overlap first
             if (playerRight > bounds.left && playerLeft < bounds.right) {
-                // Check vertical overlap with the actual character body
                 if (playerBottom > bounds.top && playerTop < bounds.bottom) {
                     endGame();
                     return;
@@ -441,8 +615,8 @@
 
             // Remove off-screen hurdles
             if (h.x < -200) {
-                if (gameContainer.contains(h.el)) {
-                    gameContainer.removeChild(h.el);
+                if (gameContent.contains(h.el)) {
+                    gameContent.removeChild(h.el);
                 }
                 hurdles.splice(i, 1);
             }
@@ -463,10 +637,8 @@
             restartBtn.style.display = 'none';
             finalScoreTxt.innerText = `Stolen Dollars: $${score}`;
             
-            // Step 1: Show pic4 and play "me khatakar insan hn" sound
             gameOverPic.src = 'pic4.jpg';
 
-            // Stop any previously playing khatakar/hye_allah sounds
             sounds.khatakar.pause();
             sounds.khatakar.currentTime = 0;
             sounds.hye_allah.pause();
@@ -474,20 +646,17 @@
 
             sounds.khatakar.play();
             
-            // Step 2: When khatakar sound finishes, switch to pic3 and play "hye Allah" at higher volume
             sounds.khatakar.onended = function() {
                 gameOverPic.src = 'pic3.jpeg';
                 
-                sounds.hye_allah.volume = 1.0; // Full volume (higher level)
+                sounds.hye_allah.volume = 1.0;
                 sounds.hye_allah.play();
 
-                // Show the restart button after hye_allah finishes
                 sounds.hye_allah.onended = function() {
                     restartBtn.style.display = 'inline-block';
                 };
             };
 
-            // Fallback: if sound doesn't fire onended (e.g., blocked), show restart after delay
             setTimeout(() => {
                 if (restartBtn.style.display === 'none') {
                     restartBtn.style.display = 'inline-block';
@@ -498,7 +667,11 @@
     }
 
     function restartGame() {
-        // Stop and reset all sounds
+        if (gameKilled) {
+            showGameDisabledScreen();
+            return;
+        }
+        
         sounds.khatakar.pause();
         sounds.khatakar.currentTime = 0;
         sounds.hye_allah.pause();
@@ -506,34 +679,43 @@
         sounds.fail.pause();
         sounds.fail.currentTime = 0;
 
-        // Clear existing hurdles
         hurdles.forEach(h => {
-            if (gameContainer.contains(h.el)) {
-                gameContainer.removeChild(h.el);
+            if (gameContent.contains(h.el)) {
+                gameContent.removeChild(h.el);
             }
         });
         hurdles = [];
         playerY = window.innerHeight / 2;
         playerVelocity = 0;
-        gameSpeed = 5;
+        gameSpeed = 6;
         sounds.bgm.pause();
         sounds.bgm.currentTime = 0;
         gameOverScreen.style.display = 'none';
         startGame();
     }
 
-    // Controls
+    // Controls - Support both desktop and mobile
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
             e.preventDefault();
             flap();
         }
     });
+    
     window.addEventListener('touchstart', (e) => {
         e.preventDefault();
         flap();
-    });
+    }, { passive: false });
+    
     window.addEventListener('mousedown', flap);
+    
+    // Handle window resize for responsive design
+    window.addEventListener('resize', () => {
+        // Adjust player position if needed
+        if (playerY > window.innerHeight - 100) {
+            playerY = window.innerHeight - 100;
+        }
+    });
 
 </script>
 </body>
