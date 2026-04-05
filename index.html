@@ -376,9 +376,9 @@
     let playerVelocity = 0;
     const gravity = 0.5;
     const flapPower = -9;
-    let gameSpeed = 6;
-    const speedIncrement = 0.0008;
-    const hurdleSpawnInterval = 900;
+    let gameSpeed = 7.5; // Increased initial speed
+    const speedIncrement = 0.0012; // Faster speed buildup
+    const hurdleSpawnInterval = 750; // More frequent hurdles
 
     function unlockAudio() {
         Object.values(sounds).forEach(sound => {
@@ -432,7 +432,7 @@
                     score = 0;
                     playerY = window.innerHeight / 2;
                     playerVelocity = 0;
-                    gameSpeed = 6;
+                    gameSpeed = 7.5;
                     scoreBoard.innerText = `Stolen Dollars: $0`;
                     sounds.bgm.play().catch(() => {});
                     spawnHurdle();
