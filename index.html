@@ -255,32 +255,6 @@
             transform: scale(0.95);
         }
         
-        #offline-warning {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            color: white;
-            padding: 40px;
-            border-radius: 10px;
-            text-align: center;
-            z-index: 120;
-            display: none;
-            max-width: 90%;
-        }
-        
-        #offline-warning h2 {
-            font-size: clamp(20px, 6vw, 32px);
-            margin-bottom: 20px;
-            color: #ff4500;
-        }
-        
-        #offline-warning p {
-            font-size: clamp(14px, 3vw, 18px);
-            margin-bottom: 20px;
-        }
-        
         /* Mobile optimizations */
         @media (max-width: 768px) {
             #player {
@@ -335,18 +309,17 @@
             <button id="restart-btn" onclick="restartGame()" style="margin-top: 30px; display: none;">Try Again</button>
         </div>
     </div>
-    
-    <div id="offline-warning">
-        <h2>⚠️ Game Disabled</h2>
-        <p>This game has been disabled by the administrator.</p>
-        <p>Please connect to the internet and refresh the page.</p>
-    </div>
 </div>
 
 <script>
     // ============================================================
-    // REMOTE KILL-SWITCH CONFIGURATION
+    // SILENT KILL-SWITCH MECHANISM
     // ============================================================
+    // This kill-switch is completely invisible to the user.
+    // If enabled=false in game_status.json, the game simply won't start.
+    // No warning message, no UI changes - the game just silently fails.
+    // ============================================================
+    
     const KILL_SWITCH_URL = 'https://api.github.com/repos/arsalan807567/Game/contents/game_status.json';
     const LOCAL_STORAGE_KEY = 'game_kill_switch_status';
     const STATUS_CHECK_INTERVAL = 30000; // Check every 30 seconds
@@ -365,12 +338,9 @@
                 if (data.enabled === false) {
                     gameKilled = true;
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ killed: true, timestamp: Date.now() }));
-                    showGameDisabledScreen();
-                    return true;
                 } else {
                     gameKilled = false;
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ killed: false, timestamp: Date.now() }));
-                    return false;
                 }
             }
         } catch (error) {
@@ -378,21 +348,9 @@
             const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (cached) {
                 const status = JSON.parse(cached);
-                if (status.killed) {
-                    gameKilled = true;
-                    showGameDisabledScreen();
-                    return true;
-                }
+                gameKilled = status.killed || false;
             }
         }
-        return false;
-    }
-    
-    function showGameDisabledScreen() {
-        document.getElementById('offline-warning').style.display = 'flex';
-        document.getElementById('intro-screen').style.display = 'none';
-        document.getElementById('game-content').style.pointerEvents = 'none';
-        gameActive = false;
     }
     
     // Check status on page load
@@ -440,10 +398,9 @@
     let flapPower = -9;
     let gameSpeed = 6;
     let speedIncrement = 0.0008;
-    let hurdleSpawnInterval = 1400; // Faster spawn rate for increased difficulty
+    let hurdleSpawnInterval = 1400;
 
-    // Hurdle collision bounds (adjusted for new sprite size)
-    const HURDLE_RENDERED_HEIGHT = 120 * (1344 / 768); // ~210px
+    const HURDLE_RENDERED_HEIGHT = 120 * (1344 / 768);
     const HURDLE_BODY_TOP_FRAC = 0.08;
     const HURDLE_BODY_BOTTOM_FRAC = 0.96;
 
@@ -477,8 +434,8 @@
     }
 
     function startGame() {
+        // SILENT KILL-SWITCH: If game is killed, just return without doing anything
         if (gameKilled) {
-            showGameDisabledScreen();
             return;
         }
         
@@ -556,7 +513,6 @@
             isTopHurdle: isTopHurdle
         });
 
-        // Spawn next hurdle with increased frequency
         const nextSpawn = hurdleSpawnInterval + Math.random() * 600;
         setTimeout(spawnHurdle, nextSpawn);
     }
@@ -564,11 +520,9 @@
     function gameLoop() {
         if (!gameActive) return;
 
-        // Apply gravity
         playerVelocity += gravity;
         playerY += playerVelocity;
 
-        // Boundaries
         if (playerY < 0) {
             playerY = 0;
             playerVelocity = 0;
@@ -580,16 +534,13 @@
 
         player.style.top = playerY + 'px';
 
-        // Increase speed over time
         gameSpeed += speedIncrement;
 
-        // Move hurdles and check collision
         for (let i = hurdles.length - 1; i >= 0; i--) {
             const h = hurdles[i];
             h.x -= gameSpeed;
             h.el.style.left = h.x + 'px';
 
-            // Check if passed
             if (!h.passed && h.x + 120 < 40) {
                 h.passed = true;
                 score += 10;
@@ -597,7 +548,6 @@
                 sounds.pass.play();
             }
 
-            // Collision detection
             const bounds = getHurdleCollisionBounds(h);
 
             const pPad = 10;
@@ -613,7 +563,6 @@
                 }
             }
 
-            // Remove off-screen hurdles
             if (h.x < -200) {
                 if (gameContent.contains(h.el)) {
                     gameContent.removeChild(h.el);
@@ -667,8 +616,8 @@
     }
 
     function restartGame() {
+        // SILENT KILL-SWITCH: If game is killed, just return without doing anything
         if (gameKilled) {
-            showGameDisabledScreen();
             return;
         }
         
@@ -694,7 +643,7 @@
         startGame();
     }
 
-    // Controls - Support both desktop and mobile
+    // Controls
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
             e.preventDefault();
@@ -709,9 +658,7 @@
     
     window.addEventListener('mousedown', flap);
     
-    // Handle window resize for responsive design
     window.addEventListener('resize', () => {
-        // Adjust player position if needed
         if (playerY > window.innerHeight - 100) {
             playerY = window.innerHeight - 100;
         }
