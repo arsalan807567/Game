@@ -14,7 +14,7 @@
             overflow: hidden;
             background-color: #87CEEB;
             font-family: 'Arial', sans-serif;
-            touch-action: manipulation;
+            touch-action: none;
         }
         #game-container {
             position: relative;
@@ -24,7 +24,6 @@
             overflow: hidden;
         }
         
-        /* Parallax background layers */
         #bg-layer-1 {
             position: absolute;
             top: 0;
@@ -77,7 +76,6 @@
             background-size: contain;
             background-repeat: no-repeat;
             z-index: 25;
-            /* Added pointer-events to prevent interaction issues */
             pointer-events: none;
         }
         
@@ -256,27 +254,21 @@
             transition: background 0.3s, transform 0.1s;
             z-index: 200;
             position: relative;
-            /* Make button easier to hit on mobile */
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
         }
         
-        button:hover {
+        button:active {
+            transform: scale(0.95);
             background: #45a049;
         }
         
-        button:active {
-            transform: scale(0.95);
-        }
-        
-        /* Mobile optimizations */
         @media (max-width: 768px) {
             #player {
                 width: 60px;
                 height: 80px;
                 left: 30px;
             }
-            
             .hurdle {
                 width: 90px;
                 height: 300px;
@@ -302,7 +294,7 @@
                 <div class="circle-img" style="background-image: url('imran_realistic.png');"></div>
             </div>
             <p style="font-size: clamp(14px, 3vw, 18px); margin-bottom: 20px;">Press Space or Tap to Fly!</p>
-            <button ontouchstart="startGame()" onclick="startGame()">Start Game</button>
+            <button id="start-btn">Start Game</button>
         </div>
 
         <div id="loading-screen">
@@ -321,65 +313,37 @@
             <h1 id="game-over-title">GAME OVER</h1>
             <img id="game-over-pic" class="game-over-img" src="" alt="Game Over">
             <p id="final-score">Stolen Dollars: $0</p>
-            <button id="restart-btn" ontouchstart="restartGame()" onclick="restartGame()" style="margin-top: 30px; display: none;">Try Again</button>
+            <button id="restart-btn" style="margin-top: 30px; display: none;">Try Again</button>
         </div>
     </div>
 </div>
 
 <script>
-    // ============================================================
-    // SILENT KILL-SWITCH MECHANISM
-    // ============================================================
-    // This kill-switch is completely invisible to the user.
-    // If enabled=false in game_status.json, the game simply won't start.
-    // No warning message, no UI changes - the game just silently fails.
-    // ============================================================
-    
     const KILL_SWITCH_URL = 'https://api.github.com/repos/arsalan807567/Game/contents/game_status.json';
     const LOCAL_STORAGE_KEY = 'game_kill_switch_status';
-    const STATUS_CHECK_INTERVAL = 30000; // Check every 30 seconds
-    
     let gameKilled = false;
-    
+
     async function checkGameStatus() {
         try {
             const response = await fetch(KILL_SWITCH_URL, { 
                 method: 'GET',
                 headers: { 'Accept': 'application/vnd.github.v3.raw' }
             });
-            
             if (response.ok) {
                 const data = await response.json();
-                if (data.enabled === false) {
-                    gameKilled = true;
-                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ killed: true, timestamp: Date.now() }));
-                } else {
-                    gameKilled = false;
-                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ killed: false, timestamp: Date.now() }));
-                }
+                gameKilled = (data.enabled === false);
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ killed: gameKilled, timestamp: Date.now() }));
             }
         } catch (error) {
-            // Offline or network error - check local cache
             const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (cached) {
-                const status = JSON.parse(cached);
-                gameKilled = status.killed || false;
-            }
+            if (cached) gameKilled = JSON.parse(cached).killed || false;
         }
     }
-    
-    // Check status on page load
-    window.addEventListener('load', () => {
-        checkGameStatus();
-        // Periodically check status
-        setInterval(checkGameStatus, STATUS_CHECK_INTERVAL);
-    });
-    
-    // ============================================================
-    // GAME LOGIC
-    // ============================================================
+    checkGameStatus();
+    setInterval(checkGameStatus, 30000);
+
     const player = document.getElementById('player');
-    const gameContainer = document.getElementById('game-container');
+    const bgLayer1 = document.getElementById('bg-layer-1');
     const scoreBoard = document.getElementById('score-board');
     const introScreen = document.getElementById('intro-screen');
     const loadingScreen = document.getElementById('loading-screen');
@@ -388,10 +352,9 @@
     const gameOverPic = document.getElementById('game-over-pic');
     const finalScoreTxt = document.getElementById('final-score');
     const restartBtn = document.getElementById('restart-btn');
+    const startBtn = document.getElementById('start-btn');
     const gameContent = document.getElementById('game-content');
-    const bgLayer1 = document.getElementById('bg-layer-1');
 
-    // Audio assets
     const sounds = {
         dang: new Audio('dang.mp3'),
         mathy: new Audio('mathy rang dyan ga.mp3'),
@@ -411,77 +374,47 @@
     let animationId;
     let playerY = window.innerHeight / 2;
     let playerVelocity = 0;
-    let gravity = 0.5;
-    let flapPower = -9;
+    const gravity = 0.5;
+    const flapPower = -9;
     let gameSpeed = 6;
-    let speedIncrement = 0.0008;
-    let hurdleSpawnInterval = 900;
+    const speedIncrement = 0.0008;
+    const hurdleSpawnInterval = 900;
 
-    // Precise collision adjustments
+    function unlockAudio() {
+        Object.values(sounds).forEach(sound => {
+            sound.play().then(() => {
+                sound.pause();
+                sound.currentTime = 0;
+            }).catch(() => {});
+        });
+    }
+
     function getHurdleCollisionBounds(h) {
         const screenHeight = window.innerHeight;
         const isMobile = window.innerWidth <= 768;
         const renderedH = isMobile ? 300 : 400;
         const hurdleWidth = isMobile ? 90 : 120;
-
-        let imgTop, imgBottom;
-
-        if (h.isTopHurdle) {
-            imgTop = 0;
-            imgBottom = renderedH;
-        } else {
-            imgTop = screenHeight - renderedH;
-            imgBottom = screenHeight;
-        }
-
-        // Tighter collision box for fairness:
-        // Increase padding to 25% from top/bottom and 35% from sides
+        let imgTop = h.isTopHurdle ? 0 : screenHeight - renderedH;
+        let imgBottom = imgTop + renderedH;
         const vPad = renderedH * 0.25;
-        const bodyTop = imgTop + vPad;
-        const bodyBottom = imgBottom - vPad;
-
         const hPad = hurdleWidth * 0.35;
-        const hurdleLeft = h.x + hPad;
-        const hurdleRight = h.x + hurdleWidth - hPad;
-
         return {
-            left: hurdleLeft,
-            right: hurdleRight,
-            top: bodyTop,
-            bottom: bodyBottom
+            left: h.x + hPad,
+            right: h.x + hurdleWidth - hPad,
+            top: imgTop + vPad,
+            bottom: imgBottom - vPad
         };
     }
 
-    let isStarting = false;
     function startGame() {
-        if (isStarting || gameKilled) return;
-        isStarting = true;
-
-        // UNLOCK AUDIO for mobile browsers
-        // On mobile, audio can only be played after a direct user interaction.
-        // We play and immediately pause all sounds to "unlock" them.
-        Object.values(sounds).forEach(sound => {
-            sound.play().then(() => {
-                sound.pause();
-                sound.currentTime = 0;
-            }).catch(e => console.log("Audio unlock failed for one track, continuing..."));
-        });
-        
+        if (gameActive || gameKilled) return;
+        unlockAudio();
         introScreen.style.display = 'none';
         loadingScreen.style.display = 'flex';
-        
-        // Start playing initial sounds
-        setTimeout(() => {
-            sounds.dang.play().catch(e => console.log("Sound play failed:", e));
-        }, 100);
-        
-        setTimeout(() => {
-            sounds.mathy.play().catch(e => console.log("Sound play failed:", e));
-        }, 1500);
-
+        setTimeout(() => sounds.dang.play().catch(() => {}), 100);
+        setTimeout(() => sounds.mathy.play().catch(() => {}), 1500);
         let count = 3;
         countdownEl.textContent = count;
-        
         const countdownInterval = setInterval(() => {
             count--;
             if (count > 0) {
@@ -496,8 +429,8 @@
                     playerY = window.innerHeight / 2;
                     playerVelocity = 0;
                     gameSpeed = 6;
-                    updateScore();
-                    sounds.bgm.play().catch(e => console.log("BGM play failed:", e));
+                    scoreBoard.innerText = `Stolen Dollars: $0`;
+                    sounds.bgm.play().catch(() => {});
                     spawnHurdle();
                     gameLoop();
                 }, 500);
@@ -508,27 +441,18 @@
     function flap() {
         if (gameActive && !gameKilled) {
             playerVelocity = flapPower;
-            sounds.jump.play();
+            sounds.jump.play().catch(() => {});
         }
-    }
-
-    function updateScore() {
-        scoreBoard.innerText = `Stolen Dollars: $${score}`;
     }
 
     function spawnHurdle() {
         if (!gameActive) return;
-
         const hurdle = document.createElement('div');
         hurdle.classList.add('hurdle');
-        
         hurdle.style.left = window.innerWidth + 'px';
-
         const isTopHurdle = Math.random() > 0.5;
-        
         const isMobile = window.innerWidth <= 768;
         const renderedH = isMobile ? 300 : 400;
-        
         if (isTopHurdle) {
             hurdle.classList.add('sky');
             hurdle.style.backgroundImage = "url('imran_khan_tall_sky.png')";
@@ -538,90 +462,51 @@
             hurdle.style.backgroundImage = "url('imran_khan_tall.png')";
             hurdle.style.top = (window.innerHeight - renderedH) + 'px';
         }
-
         gameContent.appendChild(hurdle);
-
-        hurdles.push({
-            el: hurdle,
-            x: window.innerWidth,
-            passed: false,
-            isTopHurdle: isTopHurdle
-        });
-
-        const nextSpawn = hurdleSpawnInterval + Math.random() * 600;
-        setTimeout(spawnHurdle, nextSpawn);
+        hurdles.push({ el: hurdle, x: window.innerWidth, passed: false, isTopHurdle: isTopHurdle });
+        setTimeout(spawnHurdle, hurdleSpawnInterval + Math.random() * 600);
     }
 
     function gameLoop() {
         if (!gameActive) return;
-
         playerVelocity += gravity;
         playerY += playerVelocity;
-
-        if (playerY < 0) {
-            playerY = 0;
-            playerVelocity = 0;
-        }
         const isMobile = window.innerWidth <= 768;
         const pHeight = isMobile ? 80 : 100;
-        if (playerY + pHeight > window.innerHeight) {
-            endGame();
-            return;
-        }
+        const pWidth = isMobile ? 60 : 80;
+        const pLeft = isMobile ? 30 : 40;
 
+        if (playerY < 0) { playerY = 0; playerVelocity = 0; }
+        if (playerY + pHeight > window.innerHeight) { endGame(); return; }
         player.style.top = playerY + 'px';
 
-        // Animate background
         bgOffset -= gameSpeed * 0.5;
         bgLayer1.style.backgroundPosition = bgOffset + 'px center';
-
         gameSpeed += speedIncrement;
 
         for (let i = hurdles.length - 1; i >= 0; i--) {
             const h = hurdles[i];
             h.x -= gameSpeed;
             h.el.style.left = h.x + 'px';
-
-            const isMobile = window.innerWidth <= 768;
-            const hurdleWidth = isMobile ? 90 : 120;
-            const pLeft = isMobile ? 30 : 40;
-            if (!h.passed && h.x + hurdleWidth < pLeft) {
+            const hWidth = isMobile ? 90 : 120;
+            if (!h.passed && h.x + hWidth < pLeft) {
                 h.passed = true;
                 score += 10;
-                updateScore();
-                sounds.pass.play();
+                scoreBoard.innerText = `Stolen Dollars: $${score}`;
+                sounds.pass.play().catch(() => {});
             }
-
             const bounds = getHurdleCollisionBounds(h);
-
-            const isMobile = window.innerWidth <= 768;
-            const pWidth = isMobile ? 60 : 80;
-            const pHeight = isMobile ? 80 : 100;
-            const pLeft = isMobile ? 30 : 40;
-
-            // Tighter player collision box (using 40% padding for fairness)
             const hPad = pWidth * 0.4;
             const vPad = pHeight * 0.3;
-            const playerLeft = pLeft + hPad;
-            const playerRight = pLeft + pWidth - hPad;
-            const playerTop = playerY + vPad;
-            const playerBottom = playerY + pHeight - vPad;
-
-            if (playerRight > bounds.left && playerLeft < bounds.right) {
-                if (playerBottom > bounds.top && playerTop < bounds.bottom) {
-                    endGame();
-                    return;
-                }
+            if (pLeft + pWidth - hPad > bounds.left && pLeft + hPad < bounds.right &&
+                playerY + pHeight - vPad > bounds.top && playerY + vPad < bounds.bottom) {
+                endGame(); return;
             }
-
             if (h.x < -200) {
-                if (gameContent.contains(h.el)) {
-                    gameContent.removeChild(h.el);
-                }
+                if (gameContent.contains(h.el)) gameContent.removeChild(h.el);
                 hurdles.splice(i, 1);
             }
         }
-
         animationId = requestAnimationFrame(gameLoop);
     }
 
@@ -630,100 +515,49 @@
         cancelAnimationFrame(animationId);
         sounds.bgm.pause();
         sounds.bgm.currentTime = 0;
-        sounds.fail.play();
-        
+        sounds.fail.play().catch(() => {});
         setTimeout(() => {
             gameOverScreen.style.display = 'flex';
             restartBtn.style.display = 'none';
             finalScoreTxt.innerText = `Stolen Dollars: $${score}`;
-            
             gameOverPic.src = 'pic4.jpg';
-
             sounds.khatakar.pause();
             sounds.khatakar.currentTime = 0;
             sounds.hye_allah.pause();
             sounds.hye_allah.currentTime = 0;
-
-            sounds.khatakar.play();
-            
-            sounds.khatakar.onended = function() {
+            sounds.khatakar.play().catch(() => {});
+            sounds.khatakar.onended = () => {
                 gameOverPic.src = 'pic3.jpeg';
-                
-                sounds.hye_allah.volume = 1.0;
-                sounds.hye_allah.play();
-
-                sounds.hye_allah.onended = function() {
-                    restartBtn.style.display = 'inline-block';
-                };
+                sounds.hye_allah.play().catch(() => {});
+                sounds.hye_allah.onended = () => restartBtn.style.display = 'inline-block';
             };
-
-            setTimeout(() => {
-                if (restartBtn.style.display === 'none') {
-                    restartBtn.style.display = 'inline-block';
-                }
-            }, 8000);
-
+            setTimeout(() => { if (restartBtn.style.display === 'none') restartBtn.style.display = 'inline-block'; }, 8000);
         }, 800);
     }
 
     function restartGame() {
         if (gameKilled) return;
-        isStarting = false;
-        
-        sounds.khatakar.pause();
-        sounds.khatakar.currentTime = 0;
-        sounds.hye_allah.pause();
-        sounds.hye_allah.currentTime = 0;
-        sounds.fail.pause();
-        sounds.fail.currentTime = 0;
-
-        hurdles.forEach(h => {
-            if (gameContent.contains(h.el)) {
-                gameContent.removeChild(h.el);
-            }
-        });
+        sounds.khatakar.pause(); sounds.hye_allah.pause(); sounds.fail.pause();
+        hurdles.forEach(h => { if (gameContent.contains(h.el)) gameContent.removeChild(h.el); });
         hurdles = [];
-        playerY = window.innerHeight / 2;
-        playerVelocity = 0;
-        gameSpeed = 6;
-        bgOffset = 0;
-        bgLayer1.style.backgroundPosition = '0% center';
-        sounds.bgm.pause();
-        sounds.bgm.currentTime = 0;
         gameOverScreen.style.display = 'none';
+        gameActive = false;
         startGame();
     }
 
-    // Controls
-    window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') {
-            e.preventDefault();
-            flap();
-        }
-    });
-    
-    // Unified control for both mobile and desktop
-    function handleInput(e) {
-        // Prevent default only if the game is active to avoid blocking button clicks
-        if (gameActive) {
-            if (e.cancelable) e.preventDefault();
-            flap();
-        }
-    }
+    // HIGH RELIABILITY EVENT HANDLERS
+    const handleStart = (e) => { e.preventDefault(); e.stopPropagation(); startGame(); };
+    const handleRestart = (e) => { e.preventDefault(); e.stopPropagation(); restartGame(); };
+    const handleJump = (e) => { if (gameActive) { e.preventDefault(); flap(); } };
 
-    window.addEventListener('touchstart', handleInput, { passive: false });
-    window.addEventListener('mousedown', (e) => {
-        // If the click is on a button, don't flap (let the button's onclick handle it)
-        if (e.target.tagName === 'BUTTON') return;
-        handleInput(e);
-    });
+    startBtn.addEventListener('touchstart', handleStart, {passive: false});
+    startBtn.addEventListener('click', handleStart);
+    restartBtn.addEventListener('touchstart', handleRestart, {passive: false});
+    restartBtn.addEventListener('click', handleRestart);
     
-    window.addEventListener('resize', () => {
-        if (playerY > window.innerHeight - 100) {
-            playerY = window.innerHeight - 100;
-        }
-    });
-
+    window.addEventListener('touchstart', handleJump, {passive: false});
+    window.addEventListener('mousedown', (e) => { if (e.target.tagName !== 'BUTTON') handleJump(e); });
+    window.addEventListener('keydown', (e) => { if (e.code === 'Space') flap(); });
 </script>
 </body>
 </html>
