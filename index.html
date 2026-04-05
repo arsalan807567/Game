@@ -73,11 +73,16 @@
         .hurdle {
             position: absolute;
             width: 120px;
-            height: 200px;
+            height: 400px;
             background-size: contain;
             background-repeat: no-repeat;
-            background-position: center center;
+            background-position: center;
             z-index: 25;
+        }
+        
+        .hurdle.sky {
+            transform: scaleY(-1);
+            background-position: center;
         }
         
         #intro-screen {
@@ -398,9 +403,9 @@
     let flapPower = -9;
     let gameSpeed = 6;
     let speedIncrement = 0.0008;
-    let hurdleSpawnInterval = 1400;
+    let hurdleSpawnInterval = 900;
 
-    const HURDLE_RENDERED_HEIGHT = 200;
+    const HURDLE_RENDERED_HEIGHT = 400;
     const HURDLE_BODY_TOP_FRAC = 0.08;
     const HURDLE_BODY_BOTTOM_FRAC = 0.96;
 
@@ -497,11 +502,14 @@
         const isTopHurdle = Math.random() > 0.5;
         
         if (isTopHurdle) {
+            hurdle.classList.add('sky');
             hurdle.style.backgroundImage = "url('imran_realistic.png')";
-            hurdle.style.backgroundPosition = 'center top';
+            hurdle.style.backgroundPosition = 'center';
+            hurdle.style.top = '0';
         } else {
             hurdle.style.backgroundImage = "url('imran_realistic.png')";
-            hurdle.style.backgroundPosition = 'center bottom';
+            hurdle.style.backgroundPosition = 'center';
+            hurdle.style.top = (window.innerHeight - 400) + 'px';
         }
 
         gameContent.appendChild(hurdle);
