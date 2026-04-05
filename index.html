@@ -206,7 +206,7 @@
         <h1 id="game-over-title">GAME OVER</h1>
         <img id="game-over-pic" class="game-over-img" src="" alt="Game Over">
         <p id="final-score" style="margin-top: 20px; font-size: 28px;">Stolen Dollars: $0</p>
-        <button onclick="restartGame()" style="margin-top: 30px;">Try Again</button>
+        <button id="restart-btn" onclick="restartGame()" style="margin-top: 30px; display: none;">Try Again</button>
     </div>
 </div>
 
@@ -220,6 +220,7 @@
     const gameOverScreen = document.getElementById('game-over-screen');
     const gameOverPic = document.getElementById('game-over-pic');
     const finalScoreTxt = document.getElementById('final-score');
+    const restartBtn = document.getElementById('restart-btn');
 
     // Audio assets
     const sounds = {
@@ -244,6 +245,58 @@
     let flapPower = -8;
     let gameSpeed = 5;
     let speedIncrement = 0.0005;
+
+    // Hurdle image aspect ratio: 768 x 1344
+    // In a 140px wide div with background-size: contain
+    // Rendered height = 140 * (1344 / 768) = 245px
+    const HURDLE_RENDERED_HEIGHT = 140 * (1344 / 768); // ~245px
+
+    // Content bounds within the image (as fractions of image height):
+    // imran_khan_tall.png: content from row 140/1344 to 1258/1344
+    // imran_khan_tall_sky.png: content from row 40/1344 to 1312/1344
+    // We use slightly generous bounds for fair collision detection
+    const HURDLE_BODY_TOP_FRAC = 0.08;    // 8% from top of rendered image
+    const HURDLE_BODY_BOTTOM_FRAC = 0.96; // 96% from top of rendered image
+
+    function getHurdleCollisionBounds(h) {
+        // Returns the actual pixel bounds of the hurdle character on screen
+        const screenHeight = window.innerHeight;
+        const renderedH = HURDLE_RENDERED_HEIGHT;
+
+        let imgTop, imgBottom;
+
+        if (h.isTopHurdle) {
+            // background-position: center top
+            // Image top aligns with div top (y=0)
+            imgTop = 0;
+            imgBottom = renderedH;
+        } else {
+            // background-position: center bottom
+            // Image bottom aligns with div bottom (y=screenHeight)
+            imgTop = screenHeight - renderedH;
+            imgBottom = screenHeight;
+        }
+
+        // Apply body fraction offsets (trim transparent padding)
+        const bodyTop = imgTop + renderedH * HURDLE_BODY_TOP_FRAC;
+        const bodyBottom = imgTop + renderedH * HURDLE_BODY_BOTTOM_FRAC;
+
+        // Horizontal bounds: image is centered in 140px wide div
+        // background-size: contain with 140px width -> image renders at 140px wide
+        // Image is centered horizontally in the div
+        const hurdleLeft = h.x;
+        const hurdleRight = h.x + 140;
+
+        // Add a small horizontal padding to make collision fair
+        const hPad = 12;
+
+        return {
+            left: hurdleLeft + hPad,
+            right: hurdleRight - hPad,
+            top: bodyTop,
+            bottom: bodyBottom
+        };
+    }
 
     function startGame() {
         introScreen.style.display = 'none';
@@ -315,24 +368,16 @@
         }
 
         gameContainer.appendChild(hurdle);
-        
-        // Gap configuration
-        const gapSize = 220;
-        const minGapY = 80;
-        const maxGapY = window.innerHeight - gapSize - 80;
-        const gapY = minGapY + Math.random() * (maxGapY - minGapY);
 
         hurdles.push({
             el: hurdle,
             x: window.innerWidth,
-            gapY: gapY,
-            gapSize: gapSize,
             passed: false,
             isTopHurdle: isTopHurdle
         });
 
-        // Spawn hurdles more frequently
-        const nextSpawn = 2000 + Math.random() * 1200;
+        // Spawn next hurdle
+        const nextSpawn = 1800 + Math.random() * 800;
         setTimeout(spawnHurdle, nextSpawn);
     }
 
@@ -358,35 +403,37 @@
         // Increase speed over time
         gameSpeed += speedIncrement;
 
-        // Move hurdles
+        // Move hurdles and check collision
         for (let i = hurdles.length - 1; i >= 0; i--) {
             const h = hurdles[i];
             h.x -= gameSpeed;
             h.el.style.left = h.x + 'px';
 
-            // Check if passed
-            if (!h.passed && h.x < 80) {
+            // Check if passed (player has cleared the hurdle)
+            if (!h.passed && h.x + 140 < 80) {
                 h.passed = true;
                 score += 10;
                 updateScore();
                 sounds.pass.play();
             }
 
-            // Precise collision detection with padding
-            const playerLeft = 80 + 15;
-            const playerRight = 80 + 100 - 15;
-            const playerTop = playerY + 15;
-            const playerBottom = playerY + 100 - 15;
+            // -------------------------------------------------------
+            // FIXED COLLISION DETECTION
+            // Use actual visual bounds of the hurdle character image
+            // -------------------------------------------------------
+            const bounds = getHurdleCollisionBounds(h);
 
-            const hurdleLeft = h.x + 10;
-            const hurdleRight = h.x + 140 - 10;
-            const gapTop = h.gapY;
-            const gapBottom = h.gapY + h.gapSize;
+            // Player bounding box (with small padding for fairness)
+            const pPad = 12;
+            const playerLeft = 80 + pPad;
+            const playerRight = 80 + 100 - pPad;
+            const playerTop = playerY + pPad;
+            const playerBottom = playerY + 100 - pPad;
 
-            // Check if player is in the hurdle's horizontal range
-            if (playerRight > hurdleLeft && playerLeft < hurdleRight) {
-                // Check if player is NOT in the gap
-                if (playerTop < gapTop || playerBottom > gapBottom) {
+            // Check horizontal overlap first
+            if (playerRight > bounds.left && playerLeft < bounds.right) {
+                // Check vertical overlap with the actual character body
+                if (playerBottom > bounds.top && playerTop < bounds.bottom) {
                     endGame();
                     return;
                 }
@@ -408,26 +455,57 @@
         gameActive = false;
         cancelAnimationFrame(animationId);
         sounds.bgm.pause();
+        sounds.bgm.currentTime = 0;
         sounds.fail.play();
         
         setTimeout(() => {
             gameOverScreen.style.display = 'flex';
+            restartBtn.style.display = 'none';
             finalScoreTxt.innerText = `Stolen Dollars: $${score}`;
             
-            // Show pic4 first
+            // Step 1: Show pic4 and play "me khatakar insan hn" sound
             gameOverPic.src = 'pic4.jpg';
+
+            // Stop any previously playing khatakar/hye_allah sounds
+            sounds.khatakar.pause();
+            sounds.khatakar.currentTime = 0;
+            sounds.hye_allah.pause();
+            sounds.hye_allah.currentTime = 0;
+
             sounds.khatakar.play();
             
-            // After khatakar sound finishes, show pic3 and play hye Allah sound
-            setTimeout(() => {
+            // Step 2: When khatakar sound finishes, switch to pic3 and play "hye Allah" at higher volume
+            sounds.khatakar.onended = function() {
                 gameOverPic.src = 'pic3.jpeg';
-                sounds.hye_allah = new Audio('hye Allah.mp3');
+                
+                sounds.hye_allah.volume = 1.0; // Full volume (higher level)
                 sounds.hye_allah.play();
-            }, 4500);
+
+                // Show the restart button after hye_allah finishes
+                sounds.hye_allah.onended = function() {
+                    restartBtn.style.display = 'inline-block';
+                };
+            };
+
+            // Fallback: if sound doesn't fire onended (e.g., blocked), show restart after delay
+            setTimeout(() => {
+                if (restartBtn.style.display === 'none') {
+                    restartBtn.style.display = 'inline-block';
+                }
+            }, 8000);
+
         }, 800);
     }
 
     function restartGame() {
+        // Stop and reset all sounds
+        sounds.khatakar.pause();
+        sounds.khatakar.currentTime = 0;
+        sounds.hye_allah.pause();
+        sounds.hye_allah.currentTime = 0;
+        sounds.fail.pause();
+        sounds.fail.currentTime = 0;
+
         // Clear existing hurdles
         hurdles.forEach(h => {
             if (gameContainer.contains(h.el)) {
@@ -444,7 +522,7 @@
         startGame();
     }
 
-    // Controls - Continuous flapping
+    // Controls
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
             e.preventDefault();
