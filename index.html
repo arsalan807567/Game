@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Thief Escape Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+            font-family: 'Arial', sans-serif;
+            touch-action: manipulation;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 70%, #8B4513 70%, #A0522D 100%);
+        }
+        #player {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            bottom: 30%;
+            left: 50px;
+            background-image: url('cartoon_pic2.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 10;
+            transition: transform 0.1s linear;
+        }
+        .hurdle {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background-image: url('cartoon_pic1.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 5;
+        }
+        .background-music {
+            display: none;
+        }
+        #intro-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+            text-align: center;
+        }
+        .vs-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .circle-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background-size: cover;
+            background-position: center;
+        }
+        .vs-text {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ff4500;
+            text-shadow: 2px 2px 4px #000;
+        }
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px #000;
+            z-index: 50;
+        }
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 110;
+            color: white;
+        }
+        .game-over-img {
+            width: 200px;
+            margin-bottom: 20px;
+            border: 5px solid #fff;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="score-board">Stolen Dollars: $0</div>
+    <div id="player"></div>
+
+    <div id="intro-screen">
+        <h1>Thief Escape</h1>
+        <div class="vs-container">
+            <div class="circle-img" style="background-image: url('cartoon_pic2.png');"></div>
+            <div class="vs-text">VS</div>
+            <div class="circle-img" style="background-image: url('cartoon_pic1.png');"></div>
+        </div>
+        <p>Press Space or Tap to Jump!</p>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="game-over-screen">
+        <h1 id="game-over-title">GAME OVER</h1>
+        <img id="game-over-pic" class="game-over-img" src="" alt="Game Over">
+        <p id="final-score">Stolen Dollars: $0</p>
+        <button onclick="restartGame()">Try Again</button>
+    </div>
+</div>
+
+<script>
+    const player = document.getElementById('player');
+    const gameContainer = document.getElementById('game-container');
+    const scoreBoard = document.getElementById('score-board');
+    const introScreen = document.getElementById('intro-screen');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const gameOverPic = document.getElementById('game-over-pic');
+    const finalScoreTxt = document.getElementById('final-score');
+
+    // Audio assets
+    const sounds = {
+        dang: new Audio('dang.mp3'),
+        mathy: new Audio('mathy rang dyan ga.mp3'),
+        jump: new Audio('oooo.mp3'),
+        pass: new Audio('Besharam admi.mp3'),
+        fail: new Audio('Tmary baap ka pesa he.mp3'),
+        khatakar: new Audio('me khatakar insan hn.mp3'),
+        bgm: new Audio('funny_bgm.mp3') // Placeholder for funny music
+    };
+    sounds.bgm.loop = true;
+
+    let isJumping = false;
+    let gravity = 0.6;
+    let score = 0;
+    let gameActive = false;
+    let hurdles = [];
+    let animationId;
+    let playerY = 0;
+    let playerVelocity = 0;
+    let groundY = window.innerHeight * 0.7 - 80;
+
+    function startGame() {
+        introScreen.style.display = 'none';
+        
+        // Intro sequence first
+        sounds.dang.play();
+        setTimeout(() => {
+            sounds.mathy.play();
+            setTimeout(() => {
+                gameActive = true;
+                score = 0;
+                updateScore();
+                sounds.bgm.play();
+                spawnHurdle();
+                gameLoop();
+            }, 2000);
+        }, 1000);
+    }
+
+    function jump() {
+        if (!isJumping && gameActive) {
+            isJumping = true;
+            playerVelocity = -15;
+            sounds.jump.play();
+        }
+    }
+
+    function updateScore() {
+        scoreBoard.innerText = `Stolen Dollars: $${score}`;
+    }
+
+    function spawnHurdle() {
+        if (!gameActive) return;
+
+        const hurdle = document.createElement('div');
+        hurdle.classList.add('hurdle');
+        
+        // Randomly place from sky or ground
+        const isSky = Math.random() > 0.5;
+        hurdle.style.left = window.innerWidth + 'px';
+        
+        if (isSky) {
+            hurdle.style.top = '100px';
+        } else {
+            hurdle.style.bottom = '30%';
+        }
+
+        gameContainer.appendChild(hurdle);
+        hurdles.push({
+            el: hurdle,
+            x: window.innerWidth,
+            y: isSky ? 100 : window.innerHeight * 0.7 - 60,
+            passed: false
+        });
+
+        const nextSpawn = 1500 + Math.random() * 2000;
+        setTimeout(spawnHurdle, nextSpawn);
+    }
+
+    function gameLoop() {
+        if (!gameActive) return;
+
+        // Player physics
+        playerVelocity += gravity;
+        playerY += playerVelocity;
+
+        if (playerY >= 0) {
+            playerY = 0;
+            playerVelocity = 0;
+            isJumping = false;
+        }
+
+        player.style.transform = `translateY(${playerY}px)`;
+
+        // Move hurdles
+        for (let i = hurdles.length - 1; i >= 0; i--) {
+            const h = hurdles[i];
+            h.x -= 5 + (score / 100); // Speed up slightly with score
+            h.el.style.left = h.x + 'px';
+
+            // Check if passed
+            if (!h.passed && h.x < 50) {
+                h.passed = true;
+                score += 10;
+                updateScore();
+                sounds.pass.play();
+            }
+
+            // Collision detection
+            const playerRect = player.getBoundingClientRect();
+            const hurdleRect = h.el.getBoundingClientRect();
+
+            if (
+                playerRect.left < hurdleRect.right &&
+                playerRect.right > hurdleRect.left &&
+                playerRect.top < hurdleRect.bottom &&
+                playerRect.bottom > hurdleRect.top
+            ) {
+                endGame();
+            }
+
+            // Remove off-screen hurdles
+            if (h.x < -100) {
+                gameContainer.removeChild(h.el);
+                hurdles.splice(i, 1);
+            }
+        }
+
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function endGame() {
+        gameActive = false;
+        cancelAnimationFrame(animationId);
+        sounds.bgm.pause();
+        sounds.fail.play();
+        
+        setTimeout(() => {
+            gameOverScreen.style.display = 'flex';
+            finalScoreTxt.innerText = `Stolen Dollars: $${score}`;
+            
+            // Picture logic for game over
+            gameOverPic.src = 'pic4.jpg';
+            sounds.khatakar.play();
+            
+            // After 3 seconds show pic3
+            setTimeout(() => {
+                gameOverPic.src = 'pic3.jpeg';
+            }, 4000);
+        }, 1000);
+    }
+
+    function restartGame() {
+        // Clear existing hurdles
+        hurdles.forEach(h => gameContainer.removeChild(h.el));
+        hurdles = [];
+        playerY = 0;
+        playerVelocity = 0;
+        gameOverScreen.style.display = 'none';
+        startGame();
+    }
+
+    // Controls
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') jump();
+    });
+    window.addEventListener('touchstart', jump);
+    window.addEventListener('mousedown', jump);
+
+</script>
+</body>
+</html>
