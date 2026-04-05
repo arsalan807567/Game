@@ -72,17 +72,19 @@
         
         .hurdle {
             position: absolute;
-            width: 120px;
-            height: 400px;
+            width: 150px;
+            height: 500px;
             background-size: contain;
             background-repeat: no-repeat;
-            background-position: center;
             z-index: 25;
         }
         
         .hurdle.sky {
-            transform: scaleY(-1);
-            background-position: center;
+            background-position: top;
+        }
+        
+        .hurdle.ground {
+            background-position: bottom;
         }
         
         #intro-screen {
@@ -405,9 +407,10 @@
     let speedIncrement = 0.0008;
     let hurdleSpawnInterval = 900;
 
-    const HURDLE_RENDERED_HEIGHT = 400;
-    const HURDLE_BODY_TOP_FRAC = 0.08;
-    const HURDLE_BODY_BOTTOM_FRAC = 0.96;
+    const HURDLE_RENDERED_HEIGHT = 500;
+    // Tweak these fractions if collision feels unfair
+    const HURDLE_BODY_TOP_FRAC = 0.05; 
+    const HURDLE_BODY_BOTTOM_FRAC = 0.95;
 
     function getHurdleCollisionBounds(h) {
         const screenHeight = window.innerHeight;
@@ -416,19 +419,22 @@
         let imgTop, imgBottom;
 
         if (h.isTopHurdle) {
+            // Sky hurdle: hangs from top
             imgTop = 0;
             imgBottom = renderedH;
         } else {
+            // Ground hurdle: stands on bottom
             imgTop = screenHeight - renderedH;
             imgBottom = screenHeight;
         }
 
+        // Calculate collision box based on the rendered image area
         const bodyTop = imgTop + renderedH * HURDLE_BODY_TOP_FRAC;
         const bodyBottom = imgTop + renderedH * HURDLE_BODY_BOTTOM_FRAC;
 
         const hurdleLeft = h.x;
-        const hurdleRight = h.x + 120;
-        const hPad = 10;
+        const hurdleRight = h.x + 150;
+        const hPad = 40; // Horizontal padding to make it more forgiving
 
         return {
             left: hurdleLeft + hPad,
@@ -497,19 +503,19 @@
         hurdle.classList.add('hurdle');
         
         hurdle.style.left = window.innerWidth + 'px';
-        hurdle.style.top = '0';
 
         const isTopHurdle = Math.random() > 0.5;
         
         if (isTopHurdle) {
             hurdle.classList.add('sky');
-            hurdle.style.backgroundImage = "url('imran_realistic.png')";
-            hurdle.style.backgroundPosition = 'center';
+            // Use the sky-specific image which is already inverted/tall
+            hurdle.style.backgroundImage = "url('imran_khan_tall_sky.png')";
             hurdle.style.top = '0';
         } else {
-            hurdle.style.backgroundImage = "url('imran_realistic.png')";
-            hurdle.style.backgroundPosition = 'center';
-            hurdle.style.top = (window.innerHeight - 400) + 'px';
+            hurdle.classList.add('ground');
+            // Use the tall image for ground hurdles
+            hurdle.style.backgroundImage = "url('imran_khan_tall.png')";
+            hurdle.style.top = (window.innerHeight - HURDLE_RENDERED_HEIGHT) + 'px';
         }
 
         gameContent.appendChild(hurdle);
@@ -549,7 +555,7 @@
             h.x -= gameSpeed;
             h.el.style.left = h.x + 'px';
 
-            if (!h.passed && h.x + 120 < 40) {
+            if (!h.passed && h.x + 150 < 40) {
                 h.passed = true;
                 score += 10;
                 updateScore();
