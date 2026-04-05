@@ -396,8 +396,12 @@
         const hurdleWidth = isMobile ? 90 : 120;
         let imgTop = h.isTopHurdle ? 0 : screenHeight - renderedH;
         let imgBottom = imgTop + renderedH;
-        const vPad = renderedH * 0.25;
-        const hPad = hurdleWidth * 0.35;
+        
+        // Drastically shrink hurdle collision box for fairness
+        // 35% padding from top/bottom and 40% from sides
+        const vPad = renderedH * 0.35;
+        const hPad = hurdleWidth * 0.40;
+        
         return {
             left: h.x + hPad,
             right: h.x + hurdleWidth - hPad,
@@ -496,10 +500,19 @@
                 sounds.pass.play().catch(() => {});
             }
             const bounds = getHurdleCollisionBounds(h);
-            const hPad = pWidth * 0.4;
-            const vPad = pHeight * 0.3;
-            if (pLeft + pWidth - hPad > bounds.left && pLeft + hPad < bounds.right &&
-                playerY + pHeight - vPad > bounds.top && playerY + vPad < bounds.bottom) {
+            
+            // Drastically shrink player collision box for fairness
+            // 45% horizontal padding and 35% vertical padding
+            const p_hPad = pWidth * 0.45;
+            const p_vPad = pHeight * 0.35;
+            
+            const pLeftActual = pLeft + p_hPad;
+            const pRightActual = pLeft + pWidth - p_hPad;
+            const pTopActual = playerY + p_vPad;
+            const pBottomActual = playerY + pHeight - p_vPad;
+
+            if (pRightActual > bounds.left && pLeftActual < bounds.right &&
+                pBottomActual > bounds.top && pTopActual < bounds.bottom) {
                 endGame(); return;
             }
             if (h.x < -200) {
