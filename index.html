@@ -33,8 +33,8 @@
             height: 100%;
             background-image: url('lahore_bg.png');
             background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            background-position: 0 center;
+            background-repeat: repeat;
             opacity: 0.8;
             z-index: 1;
         }
@@ -72,19 +72,19 @@
         
         .hurdle {
             position: absolute;
-            width: 150px;
-            height: 500px;
+            width: 120px;
+            height: 400px;
             background-size: contain;
             background-repeat: no-repeat;
             z-index: 25;
         }
         
         .hurdle.sky {
-            background-position: top;
+            background-position: center top;
         }
         
         .hurdle.ground {
-            background-position: bottom;
+            background-position: center bottom;
         }
         
         #intro-screen {
@@ -381,6 +381,7 @@
     const finalScoreTxt = document.getElementById('final-score');
     const restartBtn = document.getElementById('restart-btn');
     const gameContent = document.getElementById('game-content');
+    const bgLayer1 = document.getElementById('bg-layer-1');
 
     // Audio assets
     const sounds = {
@@ -398,6 +399,7 @@
     let score = 0;
     let gameActive = false;
     let hurdles = [];
+    let bgOffset = 0;
     let animationId;
     let playerY = window.innerHeight / 2;
     let playerVelocity = 0;
@@ -407,10 +409,10 @@
     let speedIncrement = 0.0008;
     let hurdleSpawnInterval = 900;
 
-    const HURDLE_RENDERED_HEIGHT = 500;
+    const HURDLE_RENDERED_HEIGHT = 400;
     // Tweak these fractions if collision feels unfair
-    const HURDLE_BODY_TOP_FRAC = 0.05; 
-    const HURDLE_BODY_BOTTOM_FRAC = 0.95;
+    const HURDLE_BODY_TOP_FRAC = 0.08; 
+    const HURDLE_BODY_BOTTOM_FRAC = 0.96;
 
     function getHurdleCollisionBounds(h) {
         const screenHeight = window.innerHeight;
@@ -433,8 +435,8 @@
         const bodyBottom = imgTop + renderedH * HURDLE_BODY_BOTTOM_FRAC;
 
         const hurdleLeft = h.x;
-        const hurdleRight = h.x + 150;
-        const hPad = 40; // Horizontal padding to make it more forgiving
+        const hurdleRight = h.x + 120;
+        const hPad = 10; // Horizontal padding
 
         return {
             left: hurdleLeft + hPad,
@@ -508,12 +510,10 @@
         
         if (isTopHurdle) {
             hurdle.classList.add('sky');
-            // Use the sky-specific image which is already inverted/tall
             hurdle.style.backgroundImage = "url('imran_khan_tall_sky.png')";
             hurdle.style.top = '0';
         } else {
             hurdle.classList.add('ground');
-            // Use the tall image for ground hurdles
             hurdle.style.backgroundImage = "url('imran_khan_tall.png')";
             hurdle.style.top = (window.innerHeight - HURDLE_RENDERED_HEIGHT) + 'px';
         }
@@ -548,6 +548,10 @@
 
         player.style.top = playerY + 'px';
 
+        // Animate background
+        bgOffset -= gameSpeed * 0.5;
+        bgLayer1.style.backgroundPosition = bgOffset + 'px center';
+
         gameSpeed += speedIncrement;
 
         for (let i = hurdles.length - 1; i >= 0; i--) {
@@ -555,7 +559,7 @@
             h.x -= gameSpeed;
             h.el.style.left = h.x + 'px';
 
-            if (!h.passed && h.x + 150 < 40) {
+            if (!h.passed && h.x + 120 < 40) {
                 h.passed = true;
                 score += 10;
                 updateScore();
@@ -651,6 +655,8 @@
         playerY = window.innerHeight / 2;
         playerVelocity = 0;
         gameSpeed = 6;
+        bgOffset = 0;
+        bgLayer1.style.backgroundPosition = '0% center';
         sounds.bgm.pause();
         sounds.bgm.currentTime = 0;
         gameOverScreen.style.display = 'none';
