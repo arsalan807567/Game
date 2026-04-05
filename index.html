@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Thief Escape Game</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        body {
             overflow: hidden;
             background-color: #87CEEB;
             font-family: 'Arial', sans-serif;
@@ -21,27 +24,31 @@
         }
         #player {
             position: absolute;
-            width: 100px;
-            height: 100px;
-            bottom: 30%;
+            width: 120px;
+            height: 120px;
+            bottom: 25%;
             left: 50px;
-            background-image: url('cartoon_pic2.png');
+            background-image: url('thief_v2.png');
             background-size: contain;
             background-repeat: no-repeat;
+            background-position: center;
             z-index: 10;
-            transition: transform 0.1s linear;
+            animation: run 0.6s steps(2) infinite;
+        }
+        @keyframes run {
+            0% { transform: scaleX(1); }
+            50% { transform: scaleX(1); }
+            100% { transform: scaleX(1); }
         }
         .hurdle {
             position: absolute;
-            width: 80px;
-            height: 80px;
-            background-image: url('cartoon_pic1.png');
+            width: 100px;
+            height: 200px;
+            background-image: url('hurdle_v2.png');
             background-size: contain;
             background-repeat: no-repeat;
+            background-position: center;
             z-index: 5;
-        }
-        .background-music {
-            display: none;
         }
         #intro-screen {
             position: absolute;
@@ -49,7 +56,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -78,6 +85,36 @@
             color: #ff4500;
             text-shadow: 2px 2px 4px #000;
         }
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 95;
+            color: white;
+        }
+        .loading-text {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
         #score-board {
             position: absolute;
             top: 20px;
@@ -103,9 +140,11 @@
             color: white;
         }
         .game-over-img {
-            width: 200px;
+            width: 250px;
+            height: auto;
             margin-bottom: 20px;
             border: 5px solid #fff;
+            border-radius: 10px;
         }
         button {
             padding: 15px 30px;
@@ -131,12 +170,17 @@
     <div id="intro-screen">
         <h1>Thief Escape</h1>
         <div class="vs-container">
-            <div class="circle-img" style="background-image: url('cartoon_pic2.png');"></div>
+            <div class="circle-img" style="background-image: url('thief_v2.png');"></div>
             <div class="vs-text">VS</div>
-            <div class="circle-img" style="background-image: url('cartoon_pic1.png');"></div>
+            <div class="circle-img" style="background-image: url('hurdle_v2.png');"></div>
         </div>
         <p>Press Space or Tap to Jump!</p>
         <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="loading-screen">
+        <div class="loading-text">Get Ready...</div>
+        <div class="loading-spinner"></div>
     </div>
 
     <div id="game-over-screen">
@@ -152,6 +196,7 @@
     const gameContainer = document.getElementById('game-container');
     const scoreBoard = document.getElementById('score-board');
     const introScreen = document.getElementById('intro-screen');
+    const loadingScreen = document.getElementById('loading-screen');
     const gameOverScreen = document.getElementById('game-over-screen');
     const gameOverPic = document.getElementById('game-over-pic');
     const finalScoreTxt = document.getElementById('final-score');
@@ -164,42 +209,46 @@
         pass: new Audio('Besharam admi.mp3'),
         fail: new Audio('Tmary baap ka pesa he.mp3'),
         khatakar: new Audio('me khatakar insan hn.mp3'),
-        bgm: new Audio('funny_bgm.mp3') // Placeholder for funny music
+        bgm: new Audio('funny_bgm.mp3')
     };
     sounds.bgm.loop = true;
 
     let isJumping = false;
-    let gravity = 0.6;
+    let gravity = 0.5;
     let score = 0;
     let gameActive = false;
     let hurdles = [];
     let animationId;
     let playerY = 0;
     let playerVelocity = 0;
-    let groundY = window.innerHeight * 0.7 - 80;
+    let groundY = window.innerHeight * 0.75 - 120;
 
     function startGame() {
         introScreen.style.display = 'none';
+        loadingScreen.style.display = 'flex';
         
-        // Intro sequence first
+        // Intro sequence with loading
         sounds.dang.play();
+        
         setTimeout(() => {
             sounds.mathy.play();
-            setTimeout(() => {
-                gameActive = true;
-                score = 0;
-                updateScore();
-                sounds.bgm.play();
-                spawnHurdle();
-                gameLoop();
-            }, 2000);
-        }, 1000);
+        }, 1500);
+
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+            gameActive = true;
+            score = 0;
+            updateScore();
+            sounds.bgm.play();
+            spawnHurdle();
+            gameLoop();
+        }, 4000);
     }
 
     function jump() {
         if (!isJumping && gameActive) {
             isJumping = true;
-            playerVelocity = -15;
+            playerVelocity = -12;
             sounds.jump.play();
         }
     }
@@ -219,20 +268,21 @@
         hurdle.style.left = window.innerWidth + 'px';
         
         if (isSky) {
-            hurdle.style.top = '100px';
+            hurdle.style.top = '50px';
         } else {
-            hurdle.style.bottom = '30%';
+            hurdle.style.top = (window.innerHeight * 0.75 - 200) + 'px';
         }
 
         gameContainer.appendChild(hurdle);
         hurdles.push({
             el: hurdle,
             x: window.innerWidth,
-            y: isSky ? 100 : window.innerHeight * 0.7 - 60,
+            y: isSky ? 50 : (window.innerHeight * 0.75 - 200),
+            isSky: isSky,
             passed: false
         });
 
-        const nextSpawn = 1500 + Math.random() * 2000;
+        const nextSpawn = 1800 + Math.random() * 1500;
         setTimeout(spawnHurdle, nextSpawn);
     }
 
@@ -243,6 +293,7 @@
         playerVelocity += gravity;
         playerY += playerVelocity;
 
+        // Ground collision
         if (playerY >= 0) {
             playerY = 0;
             playerVelocity = 0;
@@ -254,7 +305,7 @@
         // Move hurdles
         for (let i = hurdles.length - 1; i >= 0; i--) {
             const h = hurdles[i];
-            h.x -= 5 + (score / 100); // Speed up slightly with score
+            h.x -= 6 + (score / 150);
             h.el.style.left = h.x + 'px';
 
             // Check if passed
@@ -265,9 +316,20 @@
                 sounds.pass.play();
             }
 
-            // Collision detection
-            const playerRect = player.getBoundingClientRect();
-            const hurdleRect = h.el.getBoundingClientRect();
+            // Improved collision detection with padding
+            const playerRect = {
+                left: 50 + 20,
+                right: 50 + 100 - 20,
+                top: window.innerHeight * 0.75 - 120 + playerY + 20,
+                bottom: window.innerHeight * 0.75 - 120 + playerY + 100 - 20
+            };
+
+            const hurdleRect = {
+                left: h.x + 15,
+                right: h.x + 100 - 15,
+                top: h.y + 20,
+                bottom: h.y + 200 - 20
+            };
 
             if (
                 playerRect.left < hurdleRect.right &&
@@ -279,7 +341,7 @@
             }
 
             // Remove off-screen hurdles
-            if (h.x < -100) {
+            if (h.x < -150) {
                 gameContainer.removeChild(h.el);
                 hurdles.splice(i, 1);
             }
@@ -302,28 +364,40 @@
             gameOverPic.src = 'pic4.jpg';
             sounds.khatakar.play();
             
-            // After 3 seconds show pic3
+            // After 4 seconds show pic3
             setTimeout(() => {
                 gameOverPic.src = 'pic3.jpeg';
             }, 4000);
-        }, 1000);
+        }, 800);
     }
 
     function restartGame() {
         // Clear existing hurdles
-        hurdles.forEach(h => gameContainer.removeChild(h.el));
+        hurdles.forEach(h => {
+            if (gameContainer.contains(h.el)) {
+                gameContainer.removeChild(h.el);
+            }
+        });
         hurdles = [];
         playerY = 0;
         playerVelocity = 0;
+        sounds.bgm.pause();
+        sounds.bgm.currentTime = 0;
         gameOverScreen.style.display = 'none';
         startGame();
     }
 
     // Controls
     window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') jump();
+        if (e.code === 'Space') {
+            e.preventDefault();
+            jump();
+        }
     });
-    window.addEventListener('touchstart', jump);
+    window.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        jump();
+    });
     window.addEventListener('mousedown', jump);
 
 </script>
