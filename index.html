@@ -258,6 +258,7 @@
             position: relative;
             /* Make button easier to hit on mobile */
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
         
         button:hover {
@@ -433,13 +434,13 @@
             imgBottom = screenHeight;
         }
 
-        // Tighter collision box: 15% padding from top/bottom and 25% from sides
-        // This ensures you only lose if you actually hit the center of the image
-        const vPad = renderedH * 0.15;
+        // Tighter collision box for fairness:
+        // Increase padding to 25% from top/bottom and 35% from sides
+        const vPad = renderedH * 0.25;
         const bodyTop = imgTop + vPad;
         const bodyBottom = imgBottom - vPad;
 
-        const hPad = hurdleWidth * 0.25;
+        const hPad = hurdleWidth * 0.35;
         const hurdleLeft = h.x + hPad;
         const hurdleRight = h.x + hurdleWidth - hPad;
 
@@ -586,9 +587,9 @@
             const pHeight = isMobile ? 80 : 100;
             const pLeft = isMobile ? 30 : 40;
 
-            // Tighter player collision box (using 30% padding for fairness)
-            const hPad = pWidth * 0.3;
-            const vPad = pHeight * 0.2;
+            // Tighter player collision box (using 40% padding for fairness)
+            const hPad = pWidth * 0.4;
+            const vPad = pHeight * 0.3;
             const playerLeft = pLeft + hPad;
             const playerRight = pLeft + pWidth - hPad;
             const playerTop = playerY + vPad;
