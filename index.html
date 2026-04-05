@@ -77,6 +77,8 @@
             background-size: contain;
             background-repeat: no-repeat;
             z-index: 25;
+            /* Added pointer-events to prevent interaction issues */
+            pointer-events: none;
         }
         
         .hurdle.sky {
@@ -243,15 +245,19 @@
         }
         
         button {
-            padding: clamp(10px, 3vw, 15px) clamp(20px, 5vw, 30px);
-            font-size: clamp(16px, 4vw, 20px);
+            padding: clamp(15px, 5vw, 20px) clamp(30px, 8vw, 40px);
+            font-size: clamp(18px, 5vw, 24px);
             background: #4CAF50;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             margin-top: 20px;
-            transition: background 0.3s;
+            transition: background 0.3s, transform 0.1s;
+            z-index: 200;
+            position: relative;
+            /* Make button easier to hit on mobile */
+            touch-action: manipulation;
         }
         
         button:hover {
@@ -271,7 +277,8 @@
             }
             
             .hurdle {
-                width: 100px;
+                width: 90px;
+                height: 300px;
             }
         }
     </style>
@@ -409,38 +416,36 @@
     let speedIncrement = 0.0008;
     let hurdleSpawnInterval = 900;
 
-    const HURDLE_RENDERED_HEIGHT = 400;
-    // Tweak these fractions if collision feels unfair
-    const HURDLE_BODY_TOP_FRAC = 0.08; 
-    const HURDLE_BODY_BOTTOM_FRAC = 0.96;
-
+    // Precise collision adjustments
     function getHurdleCollisionBounds(h) {
         const screenHeight = window.innerHeight;
-        const renderedH = HURDLE_RENDERED_HEIGHT;
+        const isMobile = window.innerWidth <= 768;
+        const renderedH = isMobile ? 300 : 400;
+        const hurdleWidth = isMobile ? 90 : 120;
 
         let imgTop, imgBottom;
 
         if (h.isTopHurdle) {
-            // Sky hurdle: hangs from top
             imgTop = 0;
             imgBottom = renderedH;
         } else {
-            // Ground hurdle: stands on bottom
             imgTop = screenHeight - renderedH;
             imgBottom = screenHeight;
         }
 
-        // Calculate collision box based on the rendered image area
-        const bodyTop = imgTop + renderedH * HURDLE_BODY_TOP_FRAC;
-        const bodyBottom = imgTop + renderedH * HURDLE_BODY_BOTTOM_FRAC;
+        // Tighter collision box: 15% padding from top/bottom and 25% from sides
+        // This ensures you only lose if you actually hit the center of the image
+        const vPad = renderedH * 0.15;
+        const bodyTop = imgTop + vPad;
+        const bodyBottom = imgBottom - vPad;
 
-        const hurdleLeft = h.x;
-        const hurdleRight = h.x + 120;
-        const hPad = 10; // Horizontal padding
+        const hPad = hurdleWidth * 0.25;
+        const hurdleLeft = h.x + hPad;
+        const hurdleRight = h.x + hurdleWidth - hPad;
 
         return {
-            left: hurdleLeft + hPad,
-            right: hurdleRight - hPad,
+            left: hurdleLeft,
+            right: hurdleRight,
             top: bodyTop,
             bottom: bodyBottom
         };
@@ -508,6 +513,9 @@
 
         const isTopHurdle = Math.random() > 0.5;
         
+        const isMobile = window.innerWidth <= 768;
+        const renderedH = isMobile ? 300 : 400;
+        
         if (isTopHurdle) {
             hurdle.classList.add('sky');
             hurdle.style.backgroundImage = "url('imran_khan_tall_sky.png')";
@@ -515,7 +523,7 @@
         } else {
             hurdle.classList.add('ground');
             hurdle.style.backgroundImage = "url('imran_khan_tall.png')";
-            hurdle.style.top = (window.innerHeight - HURDLE_RENDERED_HEIGHT) + 'px';
+            hurdle.style.top = (window.innerHeight - renderedH) + 'px';
         }
 
         gameContent.appendChild(hurdle);
@@ -541,7 +549,9 @@
             playerY = 0;
             playerVelocity = 0;
         }
-        if (playerY + 100 > window.innerHeight) {
+        const isMobile = window.innerWidth <= 768;
+        const pHeight = isMobile ? 80 : 100;
+        if (playerY + pHeight > window.innerHeight) {
             endGame();
             return;
         }
@@ -559,7 +569,10 @@
             h.x -= gameSpeed;
             h.el.style.left = h.x + 'px';
 
-            if (!h.passed && h.x + 120 < 40) {
+            const isMobile = window.innerWidth <= 768;
+            const hurdleWidth = isMobile ? 90 : 120;
+            const pLeft = isMobile ? 30 : 40;
+            if (!h.passed && h.x + hurdleWidth < pLeft) {
                 h.passed = true;
                 score += 10;
                 updateScore();
@@ -568,11 +581,18 @@
 
             const bounds = getHurdleCollisionBounds(h);
 
-            const pPad = 10;
-            const playerLeft = 40 + pPad;
-            const playerRight = 40 + 80 - pPad;
-            const playerTop = playerY + pPad;
-            const playerBottom = playerY + 100 - pPad;
+            const isMobile = window.innerWidth <= 768;
+            const pWidth = isMobile ? 60 : 80;
+            const pHeight = isMobile ? 80 : 100;
+            const pLeft = isMobile ? 30 : 40;
+
+            // Tighter player collision box (using 30% padding for fairness)
+            const hPad = pWidth * 0.3;
+            const vPad = pHeight * 0.2;
+            const playerLeft = pLeft + hPad;
+            const playerRight = pLeft + pWidth - hPad;
+            const playerTop = playerY + vPad;
+            const playerBottom = playerY + pHeight - vPad;
 
             if (playerRight > bounds.left && playerLeft < bounds.right) {
                 if (playerBottom > bounds.top && playerTop < bounds.bottom) {
