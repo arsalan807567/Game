@@ -20,35 +20,35 @@
             position: relative;
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 70%, #8B4513 70%, #A0522D 100%);
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%);
         }
         #player {
             position: absolute;
-            width: 120px;
-            height: 120px;
-            bottom: 25%;
-            left: 50px;
-            background-image: url('thief_v2.png');
+            width: 100px;
+            height: 100px;
+            left: 80px;
+            background-image: url('shahbaz_flying.png');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
             z-index: 10;
-            animation: run 0.6s steps(2) infinite;
-        }
-        @keyframes run {
-            0% { transform: scaleX(1); }
-            50% { transform: scaleX(1); }
-            100% { transform: scaleX(1); }
         }
         .hurdle {
             position: absolute;
-            width: 100px;
-            height: 200px;
-            background-image: url('hurdle_v2.png');
+            width: 120px;
+            height: 100%;
+            background-image: url('imran_khan_tall.png');
             background-size: contain;
             background-repeat: no-repeat;
-            background-position: center;
+            background-position: center bottom;
             z-index: 5;
+        }
+        .hurdle-gap {
+            position: absolute;
+            width: 120px;
+            height: 200px;
+            background: transparent;
+            z-index: 4;
         }
         #intro-screen {
             position: absolute;
@@ -170,11 +170,11 @@
     <div id="intro-screen">
         <h1>Running Shahbaz</h1>
         <div class="vs-container">
-            <div class="circle-img" style="background-image: url('thief_v2.png');"></div>
+            <div class="circle-img" style="background-image: url('shahbaz_flying.png');"></div>
             <div class="vs-text">VS</div>
-            <div class="circle-img" style="background-image: url('hurdle_v2.png');"></div>
+            <div class="circle-img" style="background-image: url('imran_khan_tall.png');"></div>
         </div>
-        <p>Press Space or Tap to Jump!</p>
+        <p>Press Space or Tap to Fly!</p>
         <button onclick="startGame()">Start Game</button>
     </div>
 
@@ -214,15 +214,15 @@
     };
     sounds.bgm.loop = true;
 
-    let isJumping = false;
-    let gravity = 0.5;
     let score = 0;
     let gameActive = false;
     let hurdles = [];
     let animationId;
-    let playerY = 0;
+    let playerY = window.innerHeight / 2;
     let playerVelocity = 0;
-    let groundY = window.innerHeight * 0.75 - 120;
+    let gravity = 0.4;
+    let flapPower = -8;
+    let isFlying = false;
 
     function startGame() {
         introScreen.style.display = 'none';
@@ -239,6 +239,8 @@
             loadingScreen.style.display = 'none';
             gameActive = true;
             score = 0;
+            playerY = window.innerHeight / 2;
+            playerVelocity = 0;
             updateScore();
             sounds.bgm.play();
             spawnHurdle();
@@ -246,11 +248,11 @@
         }, 4000);
     }
 
-    function jump() {
-        if (!isJumping && gameActive) {
-            isJumping = true;
-            playerVelocity = -12;
+    function flap() {
+        if (gameActive) {
+            playerVelocity = flapPower;
             sounds.jump.play();
+            isFlying = true;
         }
     }
 
@@ -264,81 +266,80 @@
         const hurdle = document.createElement('div');
         hurdle.classList.add('hurdle');
         
-        // Randomly place from sky or ground
-        const isSky = Math.random() > 0.5;
         hurdle.style.left = window.innerWidth + 'px';
-        
-        if (isSky) {
-            hurdle.style.top = '50px';
-        } else {
-            hurdle.style.top = (window.innerHeight * 0.75 - 200) + 'px';
-        }
+        hurdle.style.top = '0';
 
         gameContainer.appendChild(hurdle);
+        
+        // Random gap position
+        const gapSize = 200;
+        const minGapY = 100;
+        const maxGapY = window.innerHeight - gapSize - 100;
+        const gapY = minGapY + Math.random() * (maxGapY - minGapY);
+
         hurdles.push({
             el: hurdle,
             x: window.innerWidth,
-            y: isSky ? 50 : (window.innerHeight * 0.75 - 200),
-            isSky: isSky,
+            gapY: gapY,
+            gapSize: gapSize,
             passed: false
         });
 
-        const nextSpawn = 1800 + Math.random() * 1500;
+        const nextSpawn = 2500 + Math.random() * 1500;
         setTimeout(spawnHurdle, nextSpawn);
     }
 
     function gameLoop() {
         if (!gameActive) return;
 
-        // Player physics
+        // Apply gravity
         playerVelocity += gravity;
         playerY += playerVelocity;
 
-        // Ground collision
-        if (playerY >= 0) {
+        // Boundaries
+        if (playerY < 0) {
             playerY = 0;
             playerVelocity = 0;
-            isJumping = false;
+        }
+        if (playerY + 100 > window.innerHeight) {
+            endGame();
+            return;
         }
 
-        player.style.transform = `translateY(${playerY}px)`;
+        player.style.top = playerY + 'px';
 
         // Move hurdles
         for (let i = hurdles.length - 1; i >= 0; i--) {
             const h = hurdles[i];
-            h.x -= 6 + (score / 150);
+            h.x -= 5 + (score / 100);
             h.el.style.left = h.x + 'px';
 
             // Check if passed
-            if (!h.passed && h.x < 50) {
+            if (!h.passed && h.x < 80) {
                 h.passed = true;
                 score += 10;
                 updateScore();
                 sounds.pass.play();
             }
 
-            // Improved collision detection with padding
-            const playerRect = {
-                left: 50 + 20,
-                right: 50 + 100 - 20,
-                top: window.innerHeight * 0.75 - 120 + playerY + 20,
-                bottom: window.innerHeight * 0.75 - 120 + playerY + 100 - 20
-            };
+            // Collision detection
+            const playerLeft = 80;
+            const playerRight = 80 + 100;
+            const playerTop = playerY;
+            const playerBottom = playerY + 100;
 
-            const hurdleRect = {
-                left: h.x + 15,
-                right: h.x + 100 - 15,
-                top: h.y + 20,
-                bottom: h.y + 200 - 20
-            };
+            const hurdleLeft = h.x;
+            const hurdleRight = h.x + 120;
+            const gapTop = h.gapY;
+            const gapBottom = h.gapY + h.gapSize;
 
-            if (
-                playerRect.left < hurdleRect.right &&
-                playerRect.right > hurdleRect.left &&
-                playerRect.top < hurdleRect.bottom &&
-                playerRect.bottom > hurdleRect.top
-            ) {
-                endGame();
+            // Check if player is in the hurdle area
+            if (playerRight > hurdleLeft && playerLeft < hurdleRight) {
+                // Check if player is NOT in the gap
+                if (playerTop < gapTop || playerBottom > gapBottom) {
+                    endGame();
+                    return;
+                }
             }
 
             // Remove off-screen hurdles
@@ -366,7 +367,6 @@
             sounds.khatakar.play();
             
             // After khatakar sound finishes, show pic3 and play hye Allah sound
-            // khatakar sound is approximately 3-4 seconds
             setTimeout(() => {
                 gameOverPic.src = 'pic3.jpeg';
                 sounds.hye_allah = new Audio('hye Allah.mp3');
@@ -383,7 +383,7 @@
             }
         });
         hurdles = [];
-        playerY = 0;
+        playerY = window.innerHeight / 2;
         playerVelocity = 0;
         sounds.bgm.pause();
         sounds.bgm.currentTime = 0;
@@ -391,18 +391,18 @@
         startGame();
     }
 
-    // Controls
+    // Controls - Continuous flapping
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
             e.preventDefault();
-            jump();
+            flap();
         }
     });
     window.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        jump();
+        flap();
     });
-    window.addEventListener('mousedown', jump);
+    window.addEventListener('mousedown', flap);
 
 </script>
 </body>
