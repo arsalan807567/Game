@@ -87,7 +87,7 @@
             background-position: center bottom;
         }
         
-        #intro-screen {
+        #intro-screen, #difficulty-screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -104,7 +104,12 @@
             padding: 20px;
         }
         
-        #intro-screen h1 {
+        #difficulty-screen {
+            display: none;
+            z-index: 105;
+        }
+        
+        .screen h1 {
             font-size: clamp(24px, 8vw, 48px);
             margin-bottom: 30px;
         }
@@ -242,26 +247,38 @@
             font-size: clamp(18px, 5vw, 28px);
         }
         
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 300px;
+        }
+        
         button {
-            padding: clamp(15px, 5vw, 20px) clamp(30px, 8vw, 40px);
-            font-size: clamp(18px, 5vw, 24px);
+            padding: clamp(12px, 4vw, 18px) clamp(25px, 6vw, 35px);
+            font-size: clamp(16px, 4vw, 22px);
             background: #4CAF50;
             color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            margin-top: 20px;
             transition: background 0.3s, transform 0.1s;
             z-index: 200;
             position: relative;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            width: 100%;
         }
         
         button:active {
             transform: scale(0.95);
             background: #45a049;
         }
+        
+        button.easy { background: #4CAF50; }
+        button.normal { background: #FF9800; }
+        button.hard { background: #F44336; }
         
         @media (max-width: 768px) {
             #player {
@@ -286,7 +303,7 @@
         <div id="score-board">Stolen Dollars: $0</div>
         <div id="player"></div>
 
-        <div id="intro-screen">
+        <div id="intro-screen" class="screen">
             <h1>Running Shahbaz</h1>
             <div class="vs-container">
                 <div class="circle-img" style="background-image: url('shahbaz_realistic.png');"></div>
@@ -294,7 +311,18 @@
                 <div class="circle-img" style="background-image: url('imran_realistic.png');"></div>
             </div>
             <p style="font-size: clamp(14px, 3vw, 18px); margin-bottom: 20px;">Press Space or Tap to Fly!</p>
-            <button id="start-btn">Start Game</button>
+            <div class="btn-container">
+                <button id="start-btn">Start Game</button>
+            </div>
+        </div>
+
+        <div id="difficulty-screen" class="screen">
+            <h1>Select Difficulty</h1>
+            <div class="btn-container">
+                <button id="easy-btn" class="easy">Easy</button>
+                <button id="normal-btn" class="normal">Normal</button>
+                <button id="hard-btn" class="hard">Hard</button>
+            </div>
         </div>
 
         <div id="loading-screen">
@@ -313,7 +341,9 @@
             <h1 id="game-over-title">GAME OVER</h1>
             <img id="game-over-pic" class="game-over-img" src="" alt="Game Over">
             <p id="final-score">Stolen Dollars: $0</p>
-            <button id="restart-btn" style="margin-top: 30px; display: none;">Try Again</button>
+            <div class="btn-container">
+                <button id="restart-btn" style="margin-top: 30px; display: none;">Try Again</button>
+            </div>
         </div>
     </div>
 </div>
@@ -346,6 +376,7 @@
     const bgLayer1 = document.getElementById('bg-layer-1');
     const scoreBoard = document.getElementById('score-board');
     const introScreen = document.getElementById('intro-screen');
+    const difficultyScreen = document.getElementById('difficulty-screen');
     const loadingScreen = document.getElementById('loading-screen');
     const countdownEl = document.getElementById('countdown');
     const gameOverScreen = document.getElementById('game-over-screen');
@@ -354,6 +385,10 @@
     const restartBtn = document.getElementById('restart-btn');
     const startBtn = document.getElementById('start-btn');
     const gameContent = document.getElementById('game-content');
+    
+    const easyBtn = document.getElementById('easy-btn');
+    const normalBtn = document.getElementById('normal-btn');
+    const hardBtn = document.getElementById('hard-btn');
 
     const sounds = {
         dang: new Audio('dang.mp3'),
@@ -376,9 +411,36 @@
     let playerVelocity = 0;
     const gravity = 0.5;
     const flapPower = -9;
-    let gameSpeed = 9.5; // HARD MODE: Fast start
-    const speedIncrement = 0.0025; // HARD MODE: Rapidly gets faster
-    const hurdleSpawnInterval = 550; // HARD MODE: Hurdles everywhere!
+    
+    // Difficulty Settings
+    let currentDifficulty = 'normal';
+    let gameSpeed = 7.5;
+    let speedIncrement = 0.0012;
+    let hurdleSpawnInterval = 750;
+    
+    const difficultyConfigs = {
+        easy: {
+            initialSpeed: 5.5,
+            speedInc: 0.0006,
+            spawnInt: 1100,
+            vPadMult: 0.45, // More forgiving
+            hPadMult: 0.50  // More forgiving
+        },
+        normal: {
+            initialSpeed: 7.5,
+            speedInc: 0.0012,
+            spawnInt: 750,
+            vPadMult: 0.35,
+            hPadMult: 0.40
+        },
+        hard: {
+            initialSpeed: 9.5,
+            speedInc: 0.0025,
+            spawnInt: 550,
+            vPadMult: 0.30, // Tighter
+            hPadMult: 0.35  // Tighter
+        }
+    };
 
     function unlockAudio() {
         Object.values(sounds).forEach(sound => {
@@ -397,10 +459,9 @@
         let imgTop = h.isTopHurdle ? 0 : screenHeight - renderedH;
         let imgBottom = imgTop + renderedH;
         
-        // Drastically shrink hurdle collision box for fairness
-        // 35% padding from top/bottom and 40% from sides
-        const vPad = renderedH * 0.35;
-        const hPad = hurdleWidth * 0.40;
+        const config = difficultyConfigs[currentDifficulty];
+        const vPad = renderedH * config.vPadMult;
+        const hPad = hurdleWidth * config.hPadMult;
         
         return {
             left: h.x + hPad,
@@ -410,10 +471,26 @@
         };
     }
 
-    function startGame() {
-        if (gameActive || gameKilled) return;
+    function showDifficultySelection() {
+        if (gameKilled) return;
         unlockAudio();
         introScreen.style.display = 'none';
+        difficultyScreen.style.display = 'flex';
+    }
+
+    function selectDifficulty(diff) {
+        currentDifficulty = diff;
+        const config = difficultyConfigs[diff];
+        gameSpeed = config.initialSpeed;
+        speedIncrement = config.speedInc;
+        hurdleSpawnInterval = config.spawnInt;
+        
+        difficultyScreen.style.display = 'none';
+        startGame();
+    }
+
+    function startGame() {
+        if (gameActive || gameKilled) return;
         loadingScreen.style.display = 'flex';
         setTimeout(() => sounds.dang.play().catch(() => {}), 100);
         setTimeout(() => sounds.mathy.play().catch(() => {}), 1500);
@@ -432,7 +509,7 @@
                     score = 0;
                     playerY = window.innerHeight / 2;
                     playerVelocity = 0;
-                    gameSpeed = 9.5;
+                    // gameSpeed is already set by selectDifficulty
                     scoreBoard.innerText = `Stolen Dollars: $0`;
                     sounds.bgm.play().catch(() => {});
                     spawnHurdle();
@@ -501,10 +578,9 @@
             }
             const bounds = getHurdleCollisionBounds(h);
             
-            // Drastically shrink player collision box for fairness
-            // 45% horizontal padding and 35% vertical padding
-            const p_hPad = pWidth * 0.45;
-            const p_vPad = pHeight * 0.35;
+            const config = difficultyConfigs[currentDifficulty];
+            const p_hPad = pWidth * (config.hPadMult + 0.05);
+            const p_vPad = pHeight * config.vPadMult;
             
             const pLeftActual = pLeft + p_hPad;
             const pRightActual = pLeft + pWidth - p_hPad;
@@ -555,18 +631,29 @@
         hurdles = [];
         gameOverScreen.style.display = 'none';
         gameActive = false;
-        startGame();
+        showDifficultySelection();
     }
 
     // HIGH RELIABILITY EVENT HANDLERS
-    const handleStart = (e) => { e.preventDefault(); e.stopPropagation(); startGame(); };
+    const handleStart = (e) => { e.preventDefault(); e.stopPropagation(); showDifficultySelection(); };
     const handleRestart = (e) => { e.preventDefault(); e.stopPropagation(); restartGame(); };
     const handleJump = (e) => { if (gameActive) { e.preventDefault(); flap(); } };
+    
+    const handleEasy = (e) => { e.preventDefault(); e.stopPropagation(); selectDifficulty('easy'); };
+    const handleNormal = (e) => { e.preventDefault(); e.stopPropagation(); selectDifficulty('normal'); };
+    const handleHard = (e) => { e.preventDefault(); e.stopPropagation(); selectDifficulty('hard'); };
 
     startBtn.addEventListener('touchstart', handleStart, {passive: false});
     startBtn.addEventListener('click', handleStart);
     restartBtn.addEventListener('touchstart', handleRestart, {passive: false});
     restartBtn.addEventListener('click', handleRestart);
+    
+    easyBtn.addEventListener('touchstart', handleEasy, {passive: false});
+    easyBtn.addEventListener('click', handleEasy);
+    normalBtn.addEventListener('touchstart', handleNormal, {passive: false});
+    normalBtn.addEventListener('click', handleNormal);
+    hardBtn.addEventListener('touchstart', handleHard, {passive: false});
+    hardBtn.addEventListener('click', handleHard);
     
     window.addEventListener('touchstart', handleJump, {passive: false});
     window.addEventListener('mousedown', (e) => { if (e.target.tagName !== 'BUTTON') handleJump(e); });
