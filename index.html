@@ -12,7 +12,7 @@
         }
         body {
             overflow: hidden;
-            background-color: #87CEEB;
+            background-color: #000;
             font-family: 'Arial', sans-serif;
             touch-action: none;
         }
@@ -87,6 +87,67 @@
             background-position: center bottom;
         }
         
+        #splash-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 500;
+            color: white;
+            transition: opacity 1s ease;
+        }
+
+        .splash-logo {
+            width: clamp(150px, 40vw, 300px);
+            height: auto;
+            border-radius: 20px;
+            border: 4px solid #fff;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        #landscape-lock {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .rotate-icon {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            animation: rotate 2s infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+            100% { transform: rotate(0deg); }
+        }
+
         #intro-screen, #difficulty-screen {
             position: absolute;
             top: 0;
@@ -94,7 +155,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.85);
-            display: flex;
+            display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
@@ -105,7 +166,6 @@
         }
         
         #difficulty-screen {
-            display: none;
             z-index: 105;
         }
         
@@ -295,6 +355,20 @@
 </head>
 <body>
 
+<div id="landscape-lock">
+    <svg class="rotate-icon" viewBox="0 0 24 24" fill="white">
+        <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h2.05c-.38-4.82-3.38-8.91-7.5-11l-2.52 2.52zm-12.96 11c.36 3.76 2.7 6.93 5.97 8.48l-2.52 2.52c-4.12-2.09-7.12-6.18-7.5-11h2.05zm18.48-2h-2c-.36-3.76-2.7-6.93-5.97-8.48l2.52-2.52c4.12 2.09 7.12 6.18 7.5 11zm-18.48 2c.36 3.76 2.7 6.93 5.97 8.48l-2.52 2.52c-4.12-2.09-7.12-6.18-7.5-11h2.05z"/>
+    </svg>
+    <h2>Please Rotate Your Device</h2>
+    <p>Landscape mode is required for the best experience.</p>
+</div>
+
+<div id="splash-screen">
+    <img src="icon.png" class="splash-logo" alt="Running Shahbaz Logo">
+    <h2>Running Shahbaz</h2>
+    <p>Loading Game...</p>
+</div>
+
 <div id="game-container">
     <div id="bg-layer-1"></div>
     <div id="bg-layer-2"></div>
@@ -385,6 +459,8 @@
     const restartBtn = document.getElementById('restart-btn');
     const startBtn = document.getElementById('start-btn');
     const gameContent = document.getElementById('game-content');
+    const splashScreen = document.getElementById('splash-screen');
+    const landscapeLock = document.getElementById('landscape-lock');
     
     const easyBtn = document.getElementById('easy-btn');
     const normalBtn = document.getElementById('normal-btn');
@@ -412,35 +488,39 @@
     const gravity = 0.5;
     const flapPower = -9;
     
-    // Difficulty Settings
     let currentDifficulty = 'normal';
     let gameSpeed = 7.5;
     let speedIncrement = 0.0012;
     let hurdleSpawnInterval = 750;
     
     const difficultyConfigs = {
-        easy: {
-            initialSpeed: 5.5,
-            speedInc: 0.0006,
-            spawnInt: 1100,
-            vPadMult: 0.45, // More forgiving
-            hPadMult: 0.50  // More forgiving
-        },
-        normal: {
-            initialSpeed: 7.5,
-            speedInc: 0.0012,
-            spawnInt: 750,
-            vPadMult: 0.35,
-            hPadMult: 0.40
-        },
-        hard: {
-            initialSpeed: 9.5,
-            speedInc: 0.0025,
-            spawnInt: 550,
-            vPadMult: 0.30, // Tighter
-            hPadMult: 0.35  // Tighter
-        }
+        easy: { initialSpeed: 5.5, speedInc: 0.0006, spawnInt: 1100, vPadMult: 0.45, hPadMult: 0.50 },
+        normal: { initialSpeed: 7.5, speedInc: 0.0012, spawnInt: 750, vPadMult: 0.35, hPadMult: 0.40 },
+        hard: { initialSpeed: 9.5, speedInc: 0.0025, spawnInt: 550, vPadMult: 0.30, hPadMult: 0.35 }
     };
+
+    function checkOrientation() {
+        if (window.innerHeight > window.innerWidth) {
+            landscapeLock.style.display = 'flex';
+        } else {
+            landscapeLock.style.display = 'none';
+        }
+    }
+
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+    checkOrientation();
+
+    // Cinematic Intro Sequence
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            splashScreen.style.opacity = '0';
+            setTimeout(() => {
+                splashScreen.style.display = 'none';
+                introScreen.style.display = 'flex';
+            }, 1000);
+        }, 2500);
+    });
 
     function unlockAudio() {
         Object.values(sounds).forEach(sound => {
@@ -458,17 +538,10 @@
         const hurdleWidth = isMobile ? 90 : 120;
         let imgTop = h.isTopHurdle ? 0 : screenHeight - renderedH;
         let imgBottom = imgTop + renderedH;
-        
         const config = difficultyConfigs[currentDifficulty];
         const vPad = renderedH * config.vPadMult;
         const hPad = hurdleWidth * config.hPadMult;
-        
-        return {
-            left: h.x + hPad,
-            right: h.x + hurdleWidth - hPad,
-            top: imgTop + vPad,
-            bottom: imgBottom - vPad
-        };
+        return { left: h.x + hPad, right: h.x + hurdleWidth - hPad, top: imgTop + vPad, bottom: imgBottom - vPad };
     }
 
     function showDifficultySelection() {
@@ -484,7 +557,6 @@
         gameSpeed = config.initialSpeed;
         speedIncrement = config.speedInc;
         hurdleSpawnInterval = config.spawnInt;
-        
         difficultyScreen.style.display = 'none';
         startGame();
     }
@@ -509,7 +581,6 @@
                     score = 0;
                     playerY = window.innerHeight / 2;
                     playerVelocity = 0;
-                    // gameSpeed is already set by selectDifficulty
                     scoreBoard.innerText = `Stolen Dollars: $0`;
                     sounds.bgm.play().catch(() => {});
                     spawnHurdle();
@@ -556,15 +627,12 @@
         const pHeight = isMobile ? 80 : 100;
         const pWidth = isMobile ? 60 : 80;
         const pLeft = isMobile ? 30 : 40;
-
         if (playerY < 0) { playerY = 0; playerVelocity = 0; }
         if (playerY + pHeight > window.innerHeight) { endGame(); return; }
         player.style.top = playerY + 'px';
-
         bgOffset -= gameSpeed * 0.5;
         bgLayer1.style.backgroundPosition = bgOffset + 'px center';
         gameSpeed += speedIncrement;
-
         for (let i = hurdles.length - 1; i >= 0; i--) {
             const h = hurdles[i];
             h.x -= gameSpeed;
@@ -577,18 +645,14 @@
                 sounds.pass.play().catch(() => {});
             }
             const bounds = getHurdleCollisionBounds(h);
-            
             const config = difficultyConfigs[currentDifficulty];
             const p_hPad = pWidth * (config.hPadMult + 0.05);
             const p_vPad = pHeight * config.vPadMult;
-            
             const pLeftActual = pLeft + p_hPad;
             const pRightActual = pLeft + pWidth - p_hPad;
             const pTopActual = playerY + p_vPad;
             const pBottomActual = playerY + pHeight - p_vPad;
-
-            if (pRightActual > bounds.left && pLeftActual < bounds.right &&
-                pBottomActual > bounds.top && pTopActual < bounds.bottom) {
+            if (pRightActual > bounds.left && pLeftActual < bounds.right && pBottomActual > bounds.top && pTopActual < bounds.bottom) {
                 endGame(); return;
             }
             if (h.x < -200) {
@@ -610,10 +674,8 @@
             restartBtn.style.display = 'none';
             finalScoreTxt.innerText = `Stolen Dollars: $${score}`;
             gameOverPic.src = 'pic4.jpg';
-            sounds.khatakar.pause();
-            sounds.khatakar.currentTime = 0;
-            sounds.hye_allah.pause();
-            sounds.hye_allah.currentTime = 0;
+            sounds.khatakar.pause(); sounds.khatakar.currentTime = 0;
+            sounds.hye_allah.pause(); sounds.hye_allah.currentTime = 0;
             sounds.khatakar.play().catch(() => {});
             sounds.khatakar.onended = () => {
                 gameOverPic.src = 'pic3.jpeg';
@@ -634,11 +696,9 @@
         showDifficultySelection();
     }
 
-    // HIGH RELIABILITY EVENT HANDLERS
     const handleStart = (e) => { e.preventDefault(); e.stopPropagation(); showDifficultySelection(); };
     const handleRestart = (e) => { e.preventDefault(); e.stopPropagation(); restartGame(); };
     const handleJump = (e) => { if (gameActive) { e.preventDefault(); flap(); } };
-    
     const handleEasy = (e) => { e.preventDefault(); e.stopPropagation(); selectDifficulty('easy'); };
     const handleNormal = (e) => { e.preventDefault(); e.stopPropagation(); selectDifficulty('normal'); };
     const handleHard = (e) => { e.preventDefault(); e.stopPropagation(); selectDifficulty('hard'); };
@@ -647,14 +707,12 @@
     startBtn.addEventListener('click', handleStart);
     restartBtn.addEventListener('touchstart', handleRestart, {passive: false});
     restartBtn.addEventListener('click', handleRestart);
-    
     easyBtn.addEventListener('touchstart', handleEasy, {passive: false});
     easyBtn.addEventListener('click', handleEasy);
     normalBtn.addEventListener('touchstart', handleNormal, {passive: false});
     normalBtn.addEventListener('click', handleNormal);
     hardBtn.addEventListener('touchstart', handleHard, {passive: false});
     hardBtn.addEventListener('click', handleHard);
-    
     window.addEventListener('touchstart', handleJump, {passive: false});
     window.addEventListener('mousedown', (e) => { if (e.target.tagName !== 'BUTTON') handleJump(e); });
     window.addEventListener('keydown', (e) => { if (e.code === 'Space') flap(); });
